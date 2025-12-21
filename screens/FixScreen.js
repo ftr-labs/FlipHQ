@@ -12,8 +12,8 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Feather } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
-import { getLoggedItems } from '../utils/logManager';
+import { useFocusEffect, CommonActions } from '@react-navigation/native';
+import { getLoggedItems, updateItemStatus } from '../utils/logManager';
 import { calculateValuation } from '../utils/valuation';
 import { categoryToolkits } from '../constants/valuationMetadata';
 
@@ -30,20 +30,60 @@ export default function FixScreen({ navigation }) {
 
   const loadItems = async () => {
     const allItems = await getLoggedItems();
-    // Only show items that are not yet flipped
-    const fixableItems = allItems.filter(i => i.status !== 'Flipped');
+    // Only show items with status "Found" (not "Fixed" or "Flipped")
+    const fixableItems = allItems.filter(i => i.status === 'Found');
     setItems(fixableItems);
     
     // Auto-select first item if none selected and items exist
     if (!selectedItem && fixableItems.length > 0) {
       setSelectedItem(fixableItems[0]);
+    } else if (selectedItem && !fixableItems.find(i => i.id === selectedItem.id)) {
+      // If current selected item is no longer in the list, clear selection
+      setSelectedItem(null);
     }
+  };
+
+  const buildYouTubeQuery = (item) => {
+    if (!item) return '';
+    
+    const categoryContext = {
+      furniture: 'wooden',
+      clothing: 'leather',
+      electronics: 'electronic',
+      tools: 'power tool',
+      decor: 'home decor',
+      collectibles: 'vintage'
+    }[item.category] || '';
+    
+    // Convert camelCase subcategory to readable format (e.g., 'coffeeTable' -> 'coffee table')
+    const formatSubcategory = (subcat) => {
+      if (!subcat) return '';
+      return subcat
+        .replace(/([A-Z])/g, ' $1')
+        .toLowerCase()
+        .trim();
+    };
+    
+    const subcategory = formatSubcategory(item.subcategory);
+    const condition = item.condition && item.condition !== 'None of the above' 
+      ? item.condition.toLowerCase() 
+      : '';
+    
+    // Build query: "how to fix [condition] [category context] [subcategory]"
+    // Example: "how to fix chipped corner wooden table"
+    const parts = [];
+    if (condition) parts.push(condition);
+    if (categoryContext) parts.push(categoryContext);
+    if (subcategory) parts.push(subcategory);
+    
+    const query = parts.length > 0 ? parts.join(' ') : 'repair guide';
+    return `how to fix ${query}`;
   };
 
   const openYouTube = () => {
     if (!selectedItem) return;
-    const query = encodeURIComponent(`how to fix ${selectedItem.name} ${selectedItem.condition}`);
-    const url = `https://www.youtube.com/results?search_query=${query}`;
+    const query = buildYouTubeQuery(selectedItem);
+    const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
     Linking.openURL(url);
   };
 
@@ -64,6 +104,7 @@ export default function FixScreen({ navigation }) {
     }
 
     const valuation = calculateValuation({
+      category: selectedItem.category,
       subcategory: selectedItem.subcategory,
       type: selectedItem.type,
       condition: selectedItem.condition,
@@ -108,6 +149,9 @@ export default function FixScreen({ navigation }) {
           <Feather name="play" size={20} color="#001f3f" />
           <Text style={styles.youtubeBtnText}>Watch Repair Guides</Text>
         </Pressable>
+        <Text style={styles.disclosureText}>
+          ⚠️ New feature: These are general repair guides. For specific items and cases, we recommend searching for more detailed repair instructions.
+        </Text>
 
         {/* Hustle Toolkit */}
         <View style={styles.toolkitSection}>
@@ -133,6 +177,45 @@ export default function FixScreen({ navigation }) {
             <Text style={[styles.finValue, { color: '#32CD32' }]}>+${valuation.postFixValue - valuation.estimatedValue}</Text>
           </View>
         </View>
+
+        {/* Status Update Buttons */}
+        <View style={styles.actionButtons}>
+          <Pressable 
+            style={styles.fixedBtn}
+            onPress={async () => {
+              if (!selectedItem) return;
+              await updateItemStatus(selectedItem.id, 'Fixed');
+              await loadItems();
+              // Navigate to Home
+              navigation.dispatch(
+                CommonActions.reset({
+                  index: 0,
+                  routes: [{ name: 'Home' }],
+                })
+              );
+            }}
+          >
+            <Text style={styles.fixedBtnText}>Mark as Fixed</Text>
+          </Pressable>
+          <Pressable 
+            style={styles.skipBtn}
+            onPress={async () => {
+              if (!selectedItem) return;
+              // Skip fixing - mark as Fixed so it can appear in Flip screen
+              await updateItemStatus(selectedItem.id, 'Fixed');
+              await loadItems();
+              // Navigate to Home
+              navigation.dispatch(
+                CommonActions.reset({
+                  index: 0,
+                  routes: [{ name: 'Home' }],
+                })
+              );
+            }}
+          >
+            <Text style={styles.skipBtnText}>Doesn't Need Fixing</Text>
+          </Pressable>
+        </View>
       </View>
     );
   };
@@ -141,7 +224,17 @@ export default function FixScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <StatusBar style="light" />
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
+        <Pressable 
+          onPress={() => {
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [{ name: 'Home' }],
+              })
+            );
+          }} 
+          style={styles.backButton}
+        >
           <Feather name="arrow-left" size={24} color="#FFD700" />
         </Pressable>
         <Text style={styles.title}>Fix Hub</Text>
@@ -332,6 +425,15 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-SemiBold',
     fontSize: 16,
   },
+  disclosureText: {
+    color: 'rgba(255,255,255,0.3)',
+    fontSize: 11,
+    fontFamily: 'Poppins-Regular',
+    textAlign: 'center',
+    marginTop: 8,
+    lineHeight: 16,
+    fontStyle: 'italic',
+  },
   toolkitSection: {
     backgroundColor: 'rgba(255,255,255,0.03)',
     borderRadius: 16,
@@ -456,5 +558,37 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Poppins-Regular',
     marginTop: 2,
+  },
+  actionButtons: {
+    gap: 12,
+    marginTop: 8,
+  },
+  fixedBtn: {
+    backgroundColor: '#FFD700',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  fixedBtnText: {
+    color: '#001f3f',
+    fontFamily: 'Poppins-SemiBold',
+    fontSize: 16,
+  },
+  skipBtn: {
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  skipBtnText: {
+    color: 'rgba(255,255,255,0.6)',
+    fontFamily: 'Poppins-SemiBold',
+    fontSize: 14,
   },
 });

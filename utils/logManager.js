@@ -24,7 +24,9 @@ export const saveLoggedItem = async (item) => {
     await AsyncStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(updated));
     return newItem;
   } catch (e) {
-    console.error('Logging failed:', e);
+    if (__DEV__) {
+      console.error('Logging failed:', e);
+    }
     return null;
   }
 };
@@ -34,7 +36,9 @@ export const getLoggedItems = async () => {
     const existing = await AsyncStorage.getItem(STORAGE_KEYS.INVENTORY);
     return existing ? JSON.parse(existing) : [];
   } catch (e) {
-    console.error('Failed to fetch inventory:', e);
+    if (__DEV__) {
+      console.error('Failed to fetch inventory:', e);
+    }
     return [];
   }
 };
@@ -49,7 +53,9 @@ export const updateItemStatus = async (itemId, newStatus) => {
     );
     await AsyncStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(updated));
   } catch (e) {
-    console.error('Failed to update status:', e);
+    if (__DEV__) {
+      console.error('Failed to update status:', e);
+    }
   }
 };
 
@@ -61,7 +67,9 @@ export const deleteItem = async (itemId) => {
     const updated = items.filter(item => item.id !== itemId);
     await AsyncStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(updated));
   } catch (e) {
-    console.error('Failed to delete item:', e);
+    if (__DEV__) {
+      console.error('Failed to delete item:', e);
+    }
   }
 };
 
@@ -78,7 +86,9 @@ export const saveSavedSpot = async (spot) => {
     const updated = [spot, ...parsed].slice(0, MAX_ENTRIES);
     await AsyncStorage.setItem(STORAGE_KEYS.LEADS, JSON.stringify(updated));
   } catch (e) {
-    console.error('Failed to save spot:', e);
+    if (__DEV__) {
+      console.error('Failed to save spot:', e);
+    }
   }
 };
 
@@ -87,7 +97,9 @@ export const getSavedSpots = async () => {
     const existing = await AsyncStorage.getItem(STORAGE_KEYS.LEADS);
     return existing ? JSON.parse(existing) : [];
   } catch (e) {
-    console.error('Failed to fetch leads:', e);
+    if (__DEV__) {
+      console.error('Failed to fetch leads:', e);
+    }
     return [];
   }
 };
@@ -100,7 +112,9 @@ export const removeSavedSpot = async (spotId) => {
     const updated = spots.filter(s => s.id !== spotId);
     await AsyncStorage.setItem(STORAGE_KEYS.LEADS, JSON.stringify(updated));
   } catch (e) {
-    console.error('Failed to remove spot:', e);
+    if (__DEV__) {
+      console.error('Failed to remove spot:', e);
+    }
   }
 };
 
@@ -113,7 +127,9 @@ export const saveSearchCache = async (results) => {
       results,
     }));
   } catch (e) {
-    console.error('Failed to cache search:', e);
+    if (__DEV__) {
+      console.error('Failed to cache search:', e);
+    }
   }
 };
 
@@ -126,7 +142,9 @@ export const getSearchCache = async () => {
     const isExpired = Date.now() - cache.timestamp > 24 * 60 * 60 * 1000;
     return isExpired ? null : cache.results;
   } catch (e) {
-    console.error('Failed to fetch search cache:', e);
+    if (__DEV__) {
+      console.error('Failed to fetch search cache:', e);
+    }
     return null;
   }
 };
@@ -139,7 +157,9 @@ export const clearAllData = async () => {
     await AsyncStorage.multiRemove(keys);
     return true;
   } catch (e) {
-    console.error('Failed to clear all data:', e);
+    if (__DEV__) {
+      console.error('Failed to clear all data:', e);
+    }
     return false;
   }
 };

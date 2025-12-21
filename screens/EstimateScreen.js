@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -32,7 +32,38 @@ export default function EstimateScreen() {
   const [showNameModal, setShowNameModal] = useState(false);
   const [itemName, setItemName] = useState(initialItemName || '');
 
-  // Use shared valuation logic
+  // Route params validation guard
+  useEffect(() => {
+    if (!subcategory || !type) {
+      Alert.alert('Error', 'Missing required information. Returning to home.');
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'Home' }],
+        })
+      );
+    }
+  }, [subcategory, type, navigation]);
+
+  // Use shared valuation logic (only if params are valid)
+  const valuation = (subcategory && type && category) ? calculateValuation({
+    category,
+    subcategory,
+    type,
+    condition,
+    acquisitionCost
+  }) : {
+    estimatedValue: 0,
+    fixCost: 0,
+    postFixValue: 0,
+    profit: 0,
+    lowProfit: 0,
+    highProfit: 0,
+    demandScore: 0,
+    fixabilityScore: 0,
+    rating: 0
+  };
+
   const { 
     estimatedValue, 
     fixCost, 
@@ -43,12 +74,7 @@ export default function EstimateScreen() {
     demandScore,
     fixabilityScore,
     rating 
-  } = calculateValuation({
-    subcategory,
-    type,
-    condition,
-    acquisitionCost
-  });
+  } = valuation;
 
   const flipWorthiness = '⭐'.repeat(rating).padEnd(5, '☆');
 
@@ -150,6 +176,10 @@ export default function EstimateScreen() {
             </View>
           )}
         </View>
+
+        <Text style={styles.disclosureText}>
+          Valuations are estimates based on market data and may vary. Always research current market prices before making purchase decisions.
+        </Text>
 
         <View style={styles.buttonContainer}>
           <Pressable 
@@ -382,5 +412,15 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontFamily: 'Poppins-SemiBold',
     fontSize: 14,
+  },
+  disclosureText: {
+    color: 'rgba(255,255,255,0.3)',
+    fontSize: 11,
+    fontFamily: 'Poppins-Regular',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 16,
+    paddingHorizontal: 16,
   },
 });

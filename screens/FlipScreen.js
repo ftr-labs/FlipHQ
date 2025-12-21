@@ -11,8 +11,8 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Feather } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
-import { getLoggedItems } from '../utils/logManager';
+import { useFocusEffect, CommonActions } from '@react-navigation/native';
+import { getLoggedItems, updateItemStatus } from '../utils/logManager';
 import { calculateValuation } from '../utils/valuation';
 import { categoryPlatforms } from '../constants/valuationMetadata';
 
@@ -38,12 +38,15 @@ export default function FlipScreen({ navigation }) {
 
   const loadItems = async () => {
     const allItems = await getLoggedItems();
-    // Only show items that are not yet flipped
-    const flippableItems = allItems.filter(i => i.status !== 'Flipped');
+    // Only show items with status "Fixed" (not "Found" or "Flipped")
+    const flippableItems = allItems.filter(i => i.status === 'Fixed');
     setItems(flippableItems);
     
     if (!selectedItem && flippableItems.length > 0) {
       setSelectedItem(flippableItems[0]);
+    } else if (selectedItem && !flippableItems.find(i => i.id === selectedItem.id)) {
+      // If current selected item is no longer in the list, clear selection
+      setSelectedItem(null);
     }
   };
 
@@ -71,6 +74,7 @@ export default function FlipScreen({ navigation }) {
     }
 
     const valuation = calculateValuation({
+      category: selectedItem.category,
       subcategory: selectedItem.subcategory,
       type: selectedItem.type,
       condition: selectedItem.condition,
@@ -151,11 +155,22 @@ export default function FlipScreen({ navigation }) {
           </View>
         </View>
 
+        {/* Status Update Button */}
         <Pressable 
-          style={styles.doneBtn}
-          onPress={() => navigation.navigate('MyFinds')}
+          style={styles.flippedBtn}
+          onPress={async () => {
+            if (!selectedItem) return;
+            await updateItemStatus(selectedItem.id, 'Flipped');
+            await loadItems();
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [{ name: 'Home' }],
+              })
+            );
+          }}
         >
-          <Text style={styles.doneBtnText}>Return to Inventory</Text>
+          <Text style={styles.flippedBtnText}>Mark as Flipped</Text>
         </Pressable>
       </View>
     );
@@ -165,7 +180,17 @@ export default function FlipScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <StatusBar style="light" />
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
+        <Pressable 
+          onPress={() => {
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [{ name: 'Home' }],
+              })
+            );
+          }} 
+          style={styles.backButton}
+        >
           <Feather name="arrow-left" size={24} color="#FFD700" />
         </Pressable>
         <Text style={styles.title}>Flip Strategist</Text>
@@ -213,6 +238,7 @@ export default function FlipScreen({ navigation }) {
                   <View>
                     <Text style={styles.optionName}>{item.name}</Text>
                     <Text style={styles.optionSub}>{item.status} • Profit: ${calculateValuation({
+                      category: item.category,
                       subcategory: item.subcategory,
                       type: item.type,
                       condition: item.condition,
@@ -415,17 +441,22 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.3)',
     textDecorationLine: 'line-through',
   },
-  doneBtn: {
+  flippedBtn: {
     marginTop: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: '#FFD700',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
-  doneBtnText: {
-    color: 'rgba(255,255,255,0.4)',
+  flippedBtnText: {
+    color: '#001f3f',
     fontFamily: 'Poppins-SemiBold',
+    fontSize: 16,
   },
   emptyState: {
     alignItems: 'center',

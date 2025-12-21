@@ -14,9 +14,11 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Feather } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, CommonActions } from '@react-navigation/native';
 import { sendMessageToFlipBot } from '../utils/aiService';
-import { getTokens, deductToken, initializeTokens } from '../utils/tokenManager';
+import { getTokens, deductToken, initializeTokens, refundToken } from '../utils/tokenManager';
+
+const MESSAGES_PER_TOKEN = 3; // 1 token = 3 user messages (3 exchanges)
 
 export default function FlipBotScreen({ navigation }) {
   const [messages, setMessages] = useState([
@@ -31,12 +33,15 @@ export default function FlipBotScreen({ navigation }) {
   const [isLoading, setIsLoading] = useState(false);
   const [tokenCount, setTokenCount] = useState(0);
   const [showOutOfTokens, setShowOutOfTokens] = useState(false);
+  const [messagesInSession, setMessagesInSession] = useState(0); // Track user messages in current session
   const flatListRef = useRef(null);
   const spinAnim = useRef(new Animated.Value(0)).current;
 
   useFocusEffect(
     React.useCallback(() => {
       loadTokenCount();
+      // Reset message count when screen comes into focus (new session)
+      setMessagesInSession(0);
     }, [])
   );
 
@@ -76,22 +81,27 @@ export default function FlipBotScreen({ navigation }) {
     const trimmedText = inputText.trim();
     if (!trimmedText || isLoading) return;
 
-    // Check tokens before proceeding
-    const currentTokens = await getTokens();
-    if (currentTokens < 1) {
-      setShowOutOfTokens(true);
-      return;
-    }
+    // Check if we need a new token for this message
+    const needsNewToken = messagesInSession % MESSAGES_PER_TOKEN === 0;
+    
+    if (needsNewToken) {
+      // Check tokens before proceeding
+      const currentTokens = await getTokens();
+      if (currentTokens < 1) {
+        setShowOutOfTokens(true);
+        return;
+      }
 
-    // Deduct token first
-    const deducted = await deductToken();
-    if (!deducted) {
-      setShowOutOfTokens(true);
-      await loadTokenCount();
-      return;
-    }
+      // Deduct token for new session of 3 messages
+      const deducted = await deductToken();
+      if (!deducted) {
+        setShowOutOfTokens(true);
+        await loadTokenCount();
+        return;
+      }
 
-    await loadTokenCount(); // Update display
+      await loadTokenCount(); // Update display
+    }
 
     // Add user message
     const userMessage = {
@@ -104,6 +114,10 @@ export default function FlipBotScreen({ navigation }) {
     setMessages(prev => [...prev, userMessage]);
     setInputText('');
     setIsLoading(true);
+    
+    // Increment message count
+    const newMessageCount = messagesInSession + 1;
+    setMessagesInSession(newMessageCount);
 
     try {
       // Build conversation history for context
@@ -127,16 +141,19 @@ export default function FlipBotScreen({ navigation }) {
 
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
-      // Refund token on error
-      const { refundToken } = require('../utils/tokenManager');
-      await refundToken();
-      await loadTokenCount();
+      // Only refund token if this was the first message in a new session
+      if (needsNewToken) {
+        await refundToken();
+        await loadTokenCount();
+        // Reset message count since we refunded
+        setMessagesInSession(prev => Math.max(0, prev - 1));
+      }
 
       // Show error message
       const errorMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: `Sorry, I'm having trouble right now: ${error.message}. Token refunded. Try again?`,
+        content: `Sorry, I'm having trouble right now: ${error.message}.${needsNewToken ? ' Token refunded.' : ''} Try again?`,
         timestamp: new Date(),
         isError: true,
       };
@@ -178,7 +195,17 @@ export default function FlipBotScreen({ navigation }) {
       <StatusBar style="light" />
       
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
+        <Pressable 
+          onPress={() => {
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [{ name: 'Home' }],
+              })
+            );
+          }} 
+          style={styles.backButton}
+        >
           <Feather name="arrow-left" size={24} color="#FFD700" />
         </Pressable>
         <View style={styles.headerCenter}>
@@ -197,7 +224,7 @@ export default function FlipBotScreen({ navigation }) {
             <Feather name="zap" size={48} color="rgba(255,215,0,0.3)" />
             <Text style={styles.outOfTokensTitle}>Out of Tokens</Text>
             <Text style={styles.outOfTokensText}>
-              You need tokens to chat with FlipBot. Each conversation costs 1 token.
+              You need tokens to chat with FlipBot. 1 token = 3 messages.
             </Text>
             <Pressable
               style={styles.refillButton}
@@ -210,7 +237,14 @@ export default function FlipBotScreen({ navigation }) {
             </Pressable>
             <Pressable
               style={styles.backButtonOut}
-              onPress={() => navigation.goBack()}
+              onPress={() => {
+                navigation.dispatch(
+                  CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: 'Home' }],
+                  })
+                );
+              }}
             >
               <Text style={styles.backButtonText}>Go Back</Text>
             </Pressable>

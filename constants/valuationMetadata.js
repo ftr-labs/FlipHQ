@@ -1,11 +1,11 @@
 export const basePrices = {
   // Average resale values in good condition
-  phone: 250,
-  laptop: 500,
-  speaker: 80,
-  tv: 300,
-  camera: 400,
-  tablet: 200,
+  phone: 180,
+  laptop: 450,
+  speaker: 70,
+  tv: 280,
+  camera: 350,
+  tablet: 180,
   chair: 40,
   table: 100,
   cabinet: 80,
@@ -265,11 +265,45 @@ export const categoryPlatforms = {
   ],
 };
 
-export const typeMultipliers = {
-  vintage: 1.2,
-  modern: 1.0,
-  damaged: 0.5,
-  refurbished: 1.1,
+/**
+ * Category-aware type multiplier function
+ * Vintage only applies to certain categories where it makes sense
+ * Refurbished = modern (both are "good condition")
+ * Damaged = severe discount (beyond normal repair)
+ */
+export const getTypeMultiplier = (category, subcategory, type) => {
+  // Vintage categories that support vintage premium
+  const vintageCategories = ['furniture', 'clothing', 'decor', 'collectibles'];
+  // Specific vintage electronics that can be truly vintage
+  const vintageElectronics = ['camera', 'watch', 'vinylRecord'];
+  
+  if (type === 'vintage') {
+    // Only apply vintage premium if category supports it
+    if (vintageCategories.includes(category)) {
+      return 1.3; // Vintage furniture/clothing/decor/collectibles are premium
+    }
+    if (category === 'electronics' && vintageElectronics.includes(subcategory)) {
+      return 1.2; // Vintage cameras, watches, records
+    }
+    // Modern tech can't be "vintage" - treat as modern
+    return 1.0;
+  }
+  
+  if (type === 'refurbished') {
+    // Refurbished = professionally restored, similar to modern
+    return 1.0; // Same as modern, not higher
+  }
+  
+  if (type === 'modern') {
+    return 1.0; // Baseline
+  }
+  
+  if (type === 'damaged') {
+    // "Damaged" type means beyond normal repair - severe discount
+    return 0.4; // Much lower than condition multipliers
+  }
+  
+  return 1.0; // Default fallback
 };
 
 export const conditionMultipliers = {

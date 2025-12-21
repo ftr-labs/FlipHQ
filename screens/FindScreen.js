@@ -152,13 +152,17 @@ export default function FindScreen({ navigation }) {
         '&radius=19312' + // 12 miles
         `&key=${GOOGLE_PLACES_API_KEY}`;
 
-      console.log('Request URL:', url);
+      if (__DEV__) {
+        console.log('Request URL:', url);
+      }
 
       const resp = await fetch(url);
       const data = await resp.json();
 
       if (data.status !== 'OK') {
-        console.log('Places API Error:', data.status, data.error_message);
+        if (__DEV__) {
+          console.log('Places API Error:', data.status, data.error_message);
+        }
         setMessage(`Google Places Error: ${data.status}`);
         return;
       }
@@ -214,7 +218,9 @@ export default function FindScreen({ navigation }) {
         setShowOutOfTokens(false);
       }
     } catch (e) {
-      console.log('API fetch failed:', e.message);
+      if (__DEV__) {
+        console.log('API fetch failed:', e.message);
+      }
       // Refund token on error
       if (!tokenRefunded) {
         await refundToken();

@@ -34,14 +34,15 @@ export default function LogScreen({ navigation, route }) {
 
   // Live Valuation Calculation
   const liveValuation = useMemo(() => {
-    if (!subcategory || !type) return null;
+    if (!subcategory || !type || !category) return null;
     return calculateValuation({
+      category,
       subcategory,
       type,
       condition: condition || 'None of the above',
       acquisitionCost: acquisitionCost || 0,
     });
-  }, [subcategory, type, condition, acquisitionCost]);
+  }, [category, subcategory, type, condition, acquisitionCost]);
 
   const canGoNext = () => {
     if (step === 1) return itemName.trim().length > 0 && category;
@@ -165,23 +166,40 @@ export default function LogScreen({ navigation, route }) {
 
       <Text style={[styles.label, { marginTop: 24 }]}>Type</Text>
       <View style={styles.chipContainer}>
-        {['vintage', 'modern', 'damaged', 'refurbished'].map((t) => (
-          <Pressable
-            key={t}
-            style={[
-              styles.chip,
-              type === t && styles.chipSelected
-            ]}
-            onPress={() => setType(t)}
-          >
-            <Text style={[
-              styles.chipText,
-              type === t && styles.chipTextSelected
-            ]}>
-              {t.charAt(0).toUpperCase() + t.slice(1)}
-            </Text>
-          </Pressable>
-        ))}
+        {(() => {
+          // Filter type options based on category
+          let availableTypes = [];
+          
+          if (category === 'electronics' || category === 'tools') {
+            // Electronics/Tools: modern, refurbished, damaged only
+            // Vintage only for specific vintage electronics (handled in getTypeMultiplier)
+            availableTypes = ['modern', 'refurbished', 'damaged'];
+          } else if (category === 'furniture' || category === 'clothing' || category === 'decor' || category === 'collectibles') {
+            // Furniture/Clothing/Decor/Collectibles: all types including vintage
+            availableTypes = ['vintage', 'modern', 'refurbished', 'damaged'];
+          } else {
+            // Default: all types
+            availableTypes = ['vintage', 'modern', 'refurbished', 'damaged'];
+          }
+          
+          return availableTypes.map((t) => (
+            <Pressable
+              key={t}
+              style={[
+                styles.chip,
+                type === t && styles.chipSelected
+              ]}
+              onPress={() => setType(t)}
+            >
+              <Text style={[
+                styles.chipText,
+                type === t && styles.chipTextSelected
+              ]}>
+                {t.charAt(0).toUpperCase() + t.slice(1)}
+              </Text>
+            </Pressable>
+          ));
+        })()}
       </View>
     </View>
   );

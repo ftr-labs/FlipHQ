@@ -98,17 +98,17 @@ export default function MyFindsScreen({ navigation }) {
     const flipped = inventory.filter(i => i.status === 'Flipped');
     
     const potentialProfitLow = active.reduce((sum, i) => {
-      const val = calculateValuation({ subcategory: i.subcategory, type: i.type, condition: i.condition, acquisitionCost: i.acquisitionCost });
+      const val = calculateValuation({ category: i.category, subcategory: i.subcategory, type: i.type, condition: i.condition, acquisitionCost: i.acquisitionCost });
       return sum + val.lowProfit;
     }, 0);
 
     const potentialProfitHigh = active.reduce((sum, i) => {
-      const val = calculateValuation({ subcategory: i.subcategory, type: i.type, condition: i.condition, acquisitionCost: i.acquisitionCost });
+      const val = calculateValuation({ category: i.category, subcategory: i.subcategory, type: i.type, condition: i.condition, acquisitionCost: i.acquisitionCost });
       return sum + val.highProfit;
     }, 0);
 
     const totalEarned = flipped.reduce((sum, i) => {
-      const val = calculateValuation({ subcategory: i.subcategory, type: i.type, condition: i.condition, acquisitionCost: i.acquisitionCost });
+      const val = calculateValuation({ category: i.category, subcategory: i.subcategory, type: i.type, condition: i.condition, acquisitionCost: i.acquisitionCost });
       return sum + val.profit; // Use exact profit for flipped items
     }, 0);
 

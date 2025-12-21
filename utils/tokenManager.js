@@ -19,7 +19,9 @@ export const initializeTokens = async () => {
     }
     return null; // Already initialized
   } catch (e) {
-    console.error('Failed to initialize tokens:', e);
+    if (__DEV__) {
+      console.error('Failed to initialize tokens:', e);
+    }
     return null;
   }
 };
@@ -38,7 +40,9 @@ export const getTokens = async () => {
     const parsed = JSON.parse(data);
     return parsed.count || 0;
   } catch (e) {
-    console.error('Failed to get tokens:', e);
+    if (__DEV__) {
+      console.error('Failed to get tokens:', e);
+    }
     return 0;
   }
 };
@@ -59,7 +63,9 @@ export const deductToken = async () => {
     }));
     return true;
   } catch (e) {
-    console.error('Failed to deduct token:', e);
+    if (__DEV__) {
+      console.error('Failed to deduct token:', e);
+    }
     return false;
   }
 };
@@ -77,7 +83,9 @@ export const addTokens = async (amount) => {
     }));
     return newCount;
   } catch (e) {
-    console.error('Failed to add tokens:', e);
+    if (__DEV__) {
+      console.error('Failed to add tokens:', e);
+    }
     return current;
   }
 };
@@ -100,7 +108,9 @@ export const setTokens = async (amount) => {
     }));
     return amount;
   } catch (e) {
-    console.error('Failed to set tokens:', e);
+    if (__DEV__) {
+      console.error('Failed to set tokens:', e);
+    }
     return 0;
   }
 };

@@ -84,7 +84,9 @@ export const sendMessageToFlipBot = async (userMessage, conversationHistory = []
 
     return assistantMessage;
   } catch (error) {
-    console.error('FlipBot API Error:', error);
+    if (__DEV__) {
+      console.error('FlipBot API Error:', error);
+    }
     
     // User-friendly error messages
     if (error.message.includes('API key')) {
