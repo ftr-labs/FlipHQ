@@ -11,6 +11,7 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { Feather } from '@expo/vector-icons';
 import { CommonActions } from '@react-navigation/native';
+import { scaleFont, scaleSize, getResponsiveValue } from '../utils/responsive';
 
 const steps = [
   {
@@ -64,10 +65,10 @@ export default function HowItWorksScreen({ navigation }) {
       
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color="#FFD700" />
+          <Feather name="arrow-left" size={scaleSize(24)} color="#FFD700" />
         </Pressable>
         <Text style={styles.headerTitle}>Hustle Roadmap</Text>
-        <View style={{ width: 24 }} />
+        <View style={{ width: scaleSize(24) }} />
       </View>
 
       <ScrollView 
@@ -82,7 +83,7 @@ export default function HowItWorksScreen({ navigation }) {
             <View key={index} style={styles.stepWrapper}>
               {/* Dot / Icon */}
               <View style={[styles.iconCircle, { borderColor: step.color }]}>
-                <Feather name={step.icon} size={18} color={step.color} />
+                <Feather name={step.icon} size={scaleSize(18)} color={step.color} />
               </View>
 
               {/* Content Card */}
@@ -124,89 +125,89 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingVertical: 20,
+    paddingHorizontal: scaleSize(24),
+    paddingVertical: scaleSize(20),
   },
   backButton: {
-    padding: 4,
+    padding: scaleSize(4),
   },
   headerTitle: {
     color: '#fff',
-    fontSize: 20,
+    fontSize: scaleFont(20),
     fontFamily: 'Poppins-SemiBold',
   },
   scrollContent: {
-    paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 60,
+    paddingHorizontal: scaleSize(24),
+    paddingTop: scaleSize(20),
+    paddingBottom: scaleSize(60),
   },
   pipelineContainer: {
     position: 'relative',
-    paddingLeft: 20,
+    paddingLeft: scaleSize(20),
   },
   verticalLine: {
     position: 'absolute',
-    left: 19,
+    left: scaleSize(19),
     top: 0,
-    bottom: 40,
+    bottom: scaleSize(40),
     width: 2,
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
   stepWrapper: {
     flexDirection: 'row',
-    marginBottom: 32,
+    marginBottom: scaleSize(32),
     alignItems: 'flex-start',
   },
   iconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: scaleSize(40),
+    height: scaleSize(40),
+    borderRadius: scaleSize(20),
     backgroundColor: '#001a35',
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
-    marginRight: 20,
+    marginRight: scaleSize(20),
   },
   card: {
     flex: 1,
     backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: scaleSize(16),
+    padding: scaleSize(16),
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.05)',
   },
   stepTitle: {
-    fontSize: 14,
+    fontSize: scaleFont(14),
     fontFamily: 'Poppins-SemiBold',
-    marginBottom: 8,
+    marginBottom: scaleSize(8),
     letterSpacing: 1,
   },
   stepBody: {
     color: 'rgba(255, 255, 255, 0.6)',
-    fontSize: 14,
+    fontSize: scaleFont(14),
     fontFamily: 'Poppins-Regular',
-    lineHeight: 22,
+    lineHeight: scaleSize(22),
   },
   footer: {
-    marginTop: 20,
+    marginTop: scaleSize(20),
     alignItems: 'center',
   },
   footerText: {
     color: 'rgba(255, 255, 255, 0.4)',
     fontFamily: 'Poppins-Regular',
-    fontSize: 14,
-    marginBottom: 16,
+    fontSize: scaleFont(14),
+    marginBottom: scaleSize(16),
   },
   ctaBtn: {
     backgroundColor: '#FFD700',
-    paddingVertical: 14,
-    paddingHorizontal: 40,
-    borderRadius: 12,
+    paddingVertical: scaleSize(14),
+    paddingHorizontal: scaleSize(40),
+    borderRadius: scaleSize(12),
   },
   ctaBtnText: {
     color: '#001f3f',
     fontFamily: 'Poppins-SemiBold',
-    fontSize: 15,
+    fontSize: scaleFont(15),
   },
 });

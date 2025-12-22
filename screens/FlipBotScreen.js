@@ -17,6 +17,7 @@ import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, CommonActions } from '@react-navigation/native';
 import { sendMessageToFlipBot } from '../utils/aiService';
 import { getTokens, deductToken, initializeTokens, refundToken } from '../utils/tokenManager';
+import { scaleFont, scaleSize, getResponsiveValue } from '../utils/responsive';
 
 const MESSAGES_PER_TOKEN = 3; // 1 token = 3 user messages (3 exchanges)
 
@@ -183,7 +184,7 @@ export default function FlipBotScreen({ navigation }) {
         </View>
         {!isUser && (
           <View style={styles.botIconContainer}>
-            <Feather name="message-circle" size={14} color="#FFD700" />
+            <Feather name="message-circle" size={scaleSize(14)} color="#FFD700" />
           </View>
         )}
       </View>
@@ -206,14 +207,21 @@ export default function FlipBotScreen({ navigation }) {
           }} 
           style={styles.backButton}
         >
-          <Feather name="arrow-left" size={24} color="#FFD700" />
+          <Feather name="arrow-left" size={scaleSize(24)} color="#FFD700" />
         </Pressable>
         <View style={styles.headerCenter}>
           <Text style={styles.title}>FlipBot</Text>
-          <Text style={styles.subtitle}>Your AI Sidekick</Text>
+          <Text 
+            style={styles.subtitle}
+            numberOfLines={1}
+            adjustsFontSizeToFit={true}
+            minimumFontScale={0.7}
+          >
+            Your AI Sidekick
+          </Text>
         </View>
         <View style={styles.tokenBadge}>
-          <Feather name="zap" size={14} color="#FFD700" />
+          <Feather name="zap" size={scaleSize(14)} color="#FFD700" />
           <Text style={styles.tokenText}>{tokenCount}</Text>
         </View>
       </View>
@@ -221,7 +229,7 @@ export default function FlipBotScreen({ navigation }) {
       {showOutOfTokens ? (
         <View style={styles.outOfTokensContainer}>
           <View style={styles.outOfTokensCard}>
-            <Feather name="zap" size={48} color="rgba(255,215,0,0.3)" />
+            <Feather name="zap" size={scaleSize(48)} color="rgba(255,215,0,0.3)" />
             <Text style={styles.outOfTokensTitle}>Out of Tokens</Text>
             <Text style={styles.outOfTokensText}>
               You need tokens to chat with FlipBot. 1 token = 3 messages.
@@ -279,9 +287,9 @@ export default function FlipBotScreen({ navigation }) {
                       ],
                     }}
                   >
-                    <Feather name="dollar-sign" size={16} color="#FFD700" />
+                    <Feather name="dollar-sign" size={scaleSize(16)} color="#FFD700" />
                   </Animated.View>
-                  <Text style={[styles.messageText, styles.assistantMessageText, { marginLeft: 10 }]}>
+                  <Text style={[styles.messageText, styles.assistantMessageText, { marginLeft: scaleSize(10) }]}>
                     Calculating profit...
                   </Text>
                 </View>
@@ -329,40 +337,40 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingTop: 60,
-    paddingBottom: 20,
+    paddingHorizontal: scaleSize(24),
+    paddingTop: scaleSize(60),
+    paddingBottom: scaleSize(20),
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.05)',
   },
   backButton: {
-    padding: 4,
+    padding: scaleSize(4),
   },
   headerCenter: {
     alignItems: 'center',
   },
   title: {
     color: '#fff',
-    fontSize: 24,
+    fontSize: scaleFont(24),
     fontFamily: 'Poppins-SemiBold',
   },
   subtitle: {
     color: 'rgba(255,255,255,0.4)',
-    fontSize: 12,
+    fontSize: scaleFont(12),
     fontFamily: 'Poppins-Regular',
-    marginTop: 2,
+    marginTop: scaleSize(2),
   },
   chatContainer: {
     flex: 1,
   },
   messagesList: {
-    paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 20,
+    paddingHorizontal: scaleSize(24),
+    paddingTop: scaleSize(20),
+    paddingBottom: scaleSize(20),
   },
   messageWrapper: {
     flexDirection: 'row',
-    marginBottom: 16,
+    marginBottom: scaleSize(16),
     alignItems: 'flex-end',
   },
   userMessageWrapper: {
@@ -370,9 +378,9 @@ const styles = StyleSheet.create({
   },
   messageBubble: {
     maxWidth: '80%',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 18,
+    paddingHorizontal: scaleSize(16),
+    paddingVertical: scaleSize(12),
+    borderRadius: scaleSize(18),
   },
   userBubble: {
     backgroundColor: '#003F91',
@@ -392,9 +400,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,68,68,0.3)',
   },
   messageText: {
-    fontSize: 15,
+    fontSize: scaleFont(15),
     fontFamily: 'Poppins-Regular',
-    lineHeight: 20,
+    lineHeight: scaleSize(20),
   },
   userMessageText: {
     color: '#fff',
@@ -403,44 +411,44 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.9)',
   },
   botIconContainer: {
-    marginLeft: 8,
-    width: 20,
-    height: 20,
+    marginLeft: scaleSize(8),
+    width: scaleSize(20),
+    height: scaleSize(20),
     alignItems: 'center',
     justifyContent: 'center',
   },
   loadingWrapper: {
     flexDirection: 'row',
-    marginBottom: 16,
+    marginBottom: scaleSize(16),
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    paddingHorizontal: 24,
-    paddingVertical: Platform.OS === 'ios' ? 12 : 16,
-    paddingBottom: Platform.OS === 'ios' ? 12 : 16,
+    paddingHorizontal: scaleSize(24),
+    paddingVertical: Platform.OS === 'ios' ? scaleSize(12) : scaleSize(16),
+    paddingBottom: Platform.OS === 'ios' ? scaleSize(12) : scaleSize(16),
     backgroundColor: '#001a35',
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.05)',
-    gap: 12,
+    gap: scaleSize(12),
   },
   input: {
     flex: 1,
     backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    borderRadius: scaleSize(20),
+    paddingHorizontal: scaleSize(16),
+    paddingVertical: scaleSize(12),
     color: '#fff',
-    fontSize: 15,
+    fontSize: scaleFont(15),
     fontFamily: 'Poppins-Regular',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
-    maxHeight: 100,
+    maxHeight: scaleSize(100),
   },
   sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: scaleSize(44),
+    height: scaleSize(44),
+    borderRadius: scaleSize(22),
     backgroundColor: '#FFD700',
     alignItems: 'center',
     justifyContent: 'center',
@@ -459,57 +467,57 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255,215,0,0.1)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: scaleSize(10),
+    paddingVertical: scaleSize(6),
+    borderRadius: scaleSize(12),
     borderWidth: 1,
     borderColor: 'rgba(255,215,0,0.3)',
-    gap: 6,
+    gap: scaleSize(6),
   },
   tokenText: {
     color: '#FFD700',
-    fontSize: 14,
+    fontSize: scaleFont(14),
     fontFamily: 'Poppins-SemiBold',
   },
   outOfTokensContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: scaleSize(24),
   },
   outOfTokensCard: {
     backgroundColor: 'rgba(255,255,255,0.03)',
-    borderRadius: 24,
-    padding: 32,
+    borderRadius: scaleSize(24),
+    padding: scaleSize(32),
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255,215,0,0.2)',
     width: '100%',
-    maxWidth: 400,
+    maxWidth: getResponsiveValue(scaleSize(320), scaleSize(360), scaleSize(400)),
   },
   outOfTokensTitle: {
     color: '#fff',
-    fontSize: 24,
+    fontSize: scaleFont(24),
     fontFamily: 'Poppins-SemiBold',
-    marginTop: 20,
-    marginBottom: 12,
+    marginTop: scaleSize(20),
+    marginBottom: scaleSize(12),
   },
   outOfTokensText: {
     color: 'rgba(255,255,255,0.6)',
-    fontSize: 15,
+    fontSize: scaleFont(15),
     fontFamily: 'Poppins-Regular',
     textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 32,
+    lineHeight: scaleSize(22),
+    marginBottom: scaleSize(32),
   },
   refillButton: {
     backgroundColor: '#FFD700',
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 12,
+    paddingVertical: scaleSize(16),
+    paddingHorizontal: scaleSize(32),
+    borderRadius: scaleSize(12),
     width: '100%',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: scaleSize(16),
     shadowColor: '#FFD700',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -518,15 +526,15 @@ const styles = StyleSheet.create({
   },
   refillButtonText: {
     color: '#001f3f',
-    fontSize: 16,
+    fontSize: scaleFont(16),
     fontFamily: 'Poppins-SemiBold',
   },
   backButtonOut: {
-    paddingVertical: 12,
+    paddingVertical: scaleSize(12),
   },
   backButtonText: {
     color: 'rgba(255,255,255,0.4)',
-    fontSize: 14,
+    fontSize: scaleFont(14),
     fontFamily: 'Poppins-SemiBold',
   },
 });

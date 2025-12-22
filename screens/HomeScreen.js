@@ -17,6 +17,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { clearAllData } from '../utils/logManager';
 import { getTokens, initializeTokens } from '../utils/tokenManager';
 import RefillTokensModal from '../components/RefillTokensModal';
+import { scaleFont, scaleSize, getResponsiveValue, getScreenDimensions } from '../utils/responsive';
 
 const bubbles = [
   { title: 'Find', screen: 'Find', icon: 'search' },
@@ -46,8 +47,8 @@ export default function HomeScreen({ navigation }) {
     setTokenCount(count);
   };
 
-  const buttonWidth = (width - 64) / 2; // 24px padding each side + 16px gap
-  const buttonHeight = 110;
+  const buttonWidth = (width - scaleSize(64)) / 2; // Responsive padding + gap
+  const buttonHeight = scaleSize(110);
 
   const handleClearData = async () => {
     const success = await clearAllData();
@@ -99,7 +100,7 @@ export default function HomeScreen({ navigation }) {
       <View style={styles.modalOverlay}>
         <View style={[styles.infoCard, { borderColor: 'rgba(255, 68, 68, 0.3)' }]}>
           <View style={styles.deleteIconContainer}>
-            <Feather name="alert-triangle" size={32} color="#ff4444" />
+            <Feather name="alert-triangle" size={scaleSize(32)} color="#ff4444" />
           </View>
           
           <Text style={styles.modalTitle}>Wipe History?</Text>
@@ -141,20 +142,27 @@ export default function HomeScreen({ navigation }) {
           onPress={() => setShowInfoModal(true)}
           style={styles.headerButton}
         >
-          <Feather name="info" size={20} color="#FFD700" />
+          <Feather name="info" size={scaleSize(20)} color="#FFD700" />
         </Pressable>
         
         <View style={styles.logoContainer}>
           <Text style={styles.logoText}>FlipHQ</Text>
           <View style={styles.logoUnderline} />
-          <Text style={styles.tagline}>From find to flip — in one place.</Text>
+          <Text 
+            style={styles.tagline}
+            numberOfLines={1}
+            adjustsFontSizeToFit={true}
+            minimumFontScale={0.7}
+          >
+            From find to flip — in one place.
+          </Text>
         </View>
         
         <Pressable 
           onPress={() => setShowDeleteModal(true)}
           style={styles.headerButton}
         >
-          <Feather name="trash-2" size={20} color="#FFD700" />
+          <Feather name="trash-2" size={scaleSize(20)} color="#FFD700" />
         </Pressable>
       </View>
 
@@ -175,7 +183,7 @@ export default function HomeScreen({ navigation }) {
               <View style={[styles.button, { height: buttonHeight }]}>
                 <View style={styles.buttonContent}>
                   <View style={styles.buttonIconContainer}>
-                    <Feather name={bubble.icon} size={24} color="#fff" />
+                    <Feather name={bubble.icon} size={scaleSize(24)} color="#fff" />
                   </View>
                   <Text style={styles.buttonText}>{bubble.title}</Text>
                 </View>
@@ -199,7 +207,7 @@ export default function HomeScreen({ navigation }) {
               <View style={[styles.button, { height: buttonHeight }]}>
                 <View style={styles.buttonContent}>
                   <View style={styles.buttonIconContainer}>
-                    <Feather name={bubble.icon} size={24} color="#fff" />
+                    <Feather name={bubble.icon} size={scaleSize(24)} color="#fff" />
                   </View>
                   <Text style={styles.buttonText}>{bubble.title}</Text>
                 </View>
@@ -223,7 +231,7 @@ export default function HomeScreen({ navigation }) {
               <View style={[styles.button, { height: buttonHeight }]}>
                 <View style={styles.buttonContent}>
                   <View style={styles.buttonIconContainer}>
-                    <Feather name={bubble.icon} size={24} color="#fff" />
+                    <Feather name={bubble.icon} size={scaleSize(24)} color="#fff" />
                   </View>
                   <Text style={styles.buttonText}>{bubble.title}</Text>
                 </View>
@@ -254,7 +262,7 @@ export default function HomeScreen({ navigation }) {
         >
           <Text style={styles.slimButtonText}>Refill Tokens</Text>
           <View style={styles.tokenBadgeInButton}>
-            <Feather name="zap" size={12} color="#FFD700" />
+            <Feather name="zap" size={scaleSize(12)} color="#FFD700" />
             <Text style={styles.tokenTextInButton}>{tokenCount}</Text>
           </View>
         </Pressable>
@@ -279,15 +287,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 70,
-    paddingBottom: 20,
-    paddingHorizontal: 24,
+    paddingTop: scaleSize(70),
+    paddingBottom: scaleSize(20),
+    paddingHorizontal: scaleSize(24),
     zIndex: 10,
   },
   headerButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: scaleSize(40),
+    height: scaleSize(40),
+    borderRadius: scaleSize(20),
     backgroundColor: 'rgba(255, 215, 0, 0.12)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -297,52 +305,54 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: 'center',
     flex: 1,
+    paddingHorizontal: scaleSize(8),
   },
   logoText: {
-    fontSize: 30,
+    fontSize: scaleFont(30),
     fontFamily: 'Poppins-SemiBold',
     color: '#fff',
     letterSpacing: 0.5,
   },
   logoUnderline: {
-    width: 50,
-    height: 2.5,
+    width: scaleSize(50),
+    height: scaleSize(2.5),
     backgroundColor: '#FFD700',
-    marginTop: 6,
+    marginTop: scaleSize(6),
     borderRadius: 2,
   },
   tagline: {
-    fontSize: 14,
+    fontSize: scaleFont(14),
     fontFamily: 'Poppins-Regular',
     color: 'rgba(255, 255, 255, 0.7)',
-    marginTop: 14,
+    marginTop: scaleSize(14),
     letterSpacing: 0.3,
+    textAlign: 'center',
   },
   tokenBadgeInButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginTop: 4,
+    gap: scaleSize(4),
+    marginTop: scaleSize(4),
   },
   tokenTextInButton: {
     color: '#FFD700',
-    fontSize: 12,
+    fontSize: scaleFont(12),
     fontFamily: 'Poppins-SemiBold',
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 20,
+    paddingHorizontal: scaleSize(24),
+    paddingTop: scaleSize(20),
+    paddingBottom: scaleSize(20),
     justifyContent: 'center',
   },
   buttonRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 14,
+    marginBottom: scaleSize(14),
   },
   buttonWrapper: {
-    borderRadius: 18,
+    borderRadius: scaleSize(18),
     overflow: 'hidden',
   },
   buttonPressed: {
@@ -350,8 +360,8 @@ const styles = StyleSheet.create({
     opacity: 0.95,
   },
   button: {
-    borderRadius: 18,
-    padding: 18,
+    borderRadius: scaleSize(18),
+    padding: scaleSize(18),
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#003F91',
@@ -366,35 +376,35 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   buttonIconContainer: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: scaleSize(52),
+    height: scaleSize(52),
+    borderRadius: scaleSize(26),
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
+    marginBottom: scaleSize(10),
     borderWidth: 1,
     borderColor: 'rgba(255, 215, 0, 0.3)',
   },
   buttonText: {
     color: '#fff',
-    fontSize: 15,
+    fontSize: scaleFont(15),
     fontFamily: 'Poppins-SemiBold',
   },
   bottomButtons: {
-    paddingHorizontal: 24,
-    paddingBottom: 40,
-    paddingTop: 16,
+    paddingHorizontal: scaleSize(24),
+    paddingBottom: scaleSize(40),
+    paddingTop: scaleSize(16),
   },
   slimButton: {
-    height: 48,
+    height: scaleSize(48),
     backgroundColor: '#003F91',
-    borderRadius: 12,
+    borderRadius: scaleSize(12),
     borderWidth: 1.5,
     borderColor: 'rgba(255, 215, 0, 0.4)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: scaleSize(12),
   },
   slimButtonPressed: {
     transform: [{ scale: 0.98 }],
@@ -402,7 +412,7 @@ const styles = StyleSheet.create({
   },
   slimButtonText: {
     color: '#fff',
-    fontSize: 15,
+    fontSize: scaleFont(15),
     fontFamily: 'Poppins-SemiBold',
   },
   // Modal Styles
@@ -411,108 +421,109 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    padding: scaleSize(24),
   },
   infoCard: {
     width: '100%',
+    maxWidth: getResponsiveValue(scaleSize(320), scaleSize(360), scaleSize(400)),
     backgroundColor: '#001a35',
-    borderRadius: 24,
-    padding: 24,
+    borderRadius: scaleSize(24),
+    padding: scaleSize(24),
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255, 215, 0, 0.2)',
   },
   infoLogoContainer: {
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: scaleSize(12),
   },
   infoLogoText: {
-    fontSize: 28,
+    fontSize: scaleFont(28),
     fontFamily: 'Poppins-SemiBold',
     color: '#fff',
   },
   infoLogoUnderline: {
-    width: 40,
-    height: 2,
+    width: scaleSize(40),
+    height: scaleSize(2),
     backgroundColor: '#FFD700',
-    marginTop: 4,
+    marginTop: scaleSize(4),
   },
   infoVersion: {
     color: 'rgba(255, 255, 255, 0.4)',
-    fontSize: 12,
+    fontSize: scaleFont(12),
     fontFamily: 'Poppins-Regular',
-    marginBottom: 24,
+    marginBottom: scaleSize(24),
   },
   infoDetails: {
     width: '100%',
     backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: scaleSize(16),
+    padding: scaleSize(20),
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: scaleSize(24),
   },
   infoText: {
     color: '#fff',
-    fontSize: 15,
+    fontSize: scaleFont(15),
     textAlign: 'center',
     fontFamily: 'Poppins-Regular',
-    lineHeight: 22,
+    lineHeight: scaleSize(22),
   },
   infoDivider: {
-    width: 20,
+    width: scaleSize(20),
     height: 1,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    marginVertical: 16,
+    marginVertical: scaleSize(16),
   },
   infoCredit: {
     color: 'rgba(255, 255, 255, 0.6)',
-    fontSize: 13,
+    fontSize: scaleFont(13),
     fontFamily: 'Poppins-Regular',
   },
   modalCloseBtn: {
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    borderRadius: 12,
+    paddingVertical: scaleSize(12),
+    paddingHorizontal: scaleSize(32),
+    borderRadius: scaleSize(12),
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   modalCloseBtnText: {
     color: '#fff',
     fontFamily: 'Poppins-SemiBold',
-    fontSize: 14,
+    fontSize: scaleFont(14),
   },
   deleteIconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: scaleSize(64),
+    height: scaleSize(64),
+    borderRadius: scaleSize(32),
     backgroundColor: 'rgba(255, 68, 68, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: scaleSize(20),
   },
   modalTitle: {
-    fontSize: 22,
+    fontSize: scaleFont(22),
     fontFamily: 'Poppins-SemiBold',
     color: '#fff',
-    marginBottom: 12,
+    marginBottom: scaleSize(12),
   },
   modalSubtitle: {
-    fontSize: 14,
+    fontSize: scaleFont(14),
     fontFamily: 'Poppins-Regular',
     color: 'rgba(255, 255, 255, 0.6)',
     textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 32,
+    lineHeight: scaleSize(20),
+    marginBottom: scaleSize(32),
   },
   modalActionRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: scaleSize(12),
   },
   modalBtn: {
     flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: scaleSize(14),
+    borderRadius: scaleSize(12),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -523,7 +534,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ff4444',
   },
   modalBtnText: {
-    fontSize: 14,
+    fontSize: scaleFont(14),
     fontFamily: 'Poppins-SemiBold',
     color: 'rgba(255, 255, 255, 0.8)',
   },

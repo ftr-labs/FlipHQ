@@ -18,8 +18,7 @@ import {
   conditionOptions,
 } from '../constants/itemMetadata';
 import { calculateValuation } from '../utils/valuation';
-
-const { width } = Dimensions.get('window');
+import { scaleFont, scaleSize, getScreenDimensions } from '../utils/responsive';
 
 export default function LogScreen({ navigation, route }) {
   const { fromSpot } = route.params || {};
@@ -123,7 +122,7 @@ export default function LogScreen({ navigation, route }) {
             >
               <Feather 
                 name={cat.icon} 
-                size={24} 
+                size={scaleSize(24)} 
                 color={category === cat.value ? '#001f3f' : '#FFD700'} 
               />
               <Text style={[
@@ -164,7 +163,7 @@ export default function LogScreen({ navigation, route }) {
         ))}
       </View>
 
-      <Text style={[styles.label, { marginTop: 24 }]}>Type</Text>
+      <Text style={[styles.label, { marginTop: scaleSize(24) }]}>Type</Text>
       <View style={styles.chipContainer}>
         {(() => {
           // Filter type options based on category
@@ -229,7 +228,7 @@ export default function LogScreen({ navigation, route }) {
         ))}
       </View>
 
-      <View style={[styles.inputGroup, { marginTop: 32 }]}>
+      <View style={[styles.inputGroup, { marginTop: scaleSize(32) }]}>
         <Text style={styles.label}>Acquisition Cost ($)</Text>
         <TextInput
           style={styles.textInput}
@@ -253,10 +252,10 @@ export default function LogScreen({ navigation, route }) {
       >
         <View style={styles.header}>
           <Pressable onPress={handleBack} style={styles.backButton}>
-            <Feather name="arrow-left" size={24} color="#FFD700" />
+            <Feather name="arrow-left" size={scaleSize(24)} color="#FFD700" />
           </Pressable>
           <Text style={styles.title}>Log Item</Text>
-          <View style={{ width: 24 }} />
+          <View style={{ width: scaleSize(24) }} />
         </View>
 
         {renderStepIndicator()}
@@ -267,8 +266,10 @@ export default function LogScreen({ navigation, route }) {
         >
           {fromSpot && step === 1 && (
             <View style={styles.spotInfo}>
-              <Feather name="map-pin" size={14} color="#FFD700" />
-              <Text style={styles.spotText}>Found at: {fromSpot}</Text>
+              <Feather name="map-pin" size={scaleSize(14)} color="#FFD700" />
+              <Text style={styles.spotText} numberOfLines={1} adjustsFontSizeToFit={true} minimumFontScale={0.8}>
+                Found at: {fromSpot}
+              </Text>
             </View>
           )}
 
@@ -283,7 +284,7 @@ export default function LogScreen({ navigation, route }) {
             <View style={styles.ticker}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.tickerLabel}>Collectibles Valuation</Text>
-                <Text style={[styles.tickerValue, { color: '#FFD700', fontSize: 14 }]}>
+                <Text style={[styles.tickerValue, { color: '#FFD700', fontSize: scaleFont(14) }]}>
                   Use specialized tools for accurate pricing
                 </Text>
               </View>
@@ -317,9 +318,9 @@ export default function LogScreen({ navigation, route }) {
             </Text>
             <Feather 
               name={step === 3 ? 'check-circle' : 'arrow-right'} 
-              size={18} 
+              size={scaleSize(18)} 
               color="#001f3f" 
-              style={{ marginLeft: 8 }} 
+              style={{ marginLeft: scaleSize(8) }} 
             />
           </Pressable>
         </View>
@@ -427,8 +428,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   categoryCard: {
-    width: (width - 48 - 12) / 2,
-    borderRadius: 16,
+    width: (getScreenDimensions().width - scaleSize(48) - scaleSize(12)) / 2,
+    borderRadius: scaleSize(16),
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
@@ -437,10 +438,10 @@ const styles = StyleSheet.create({
     borderColor: '#FFD700',
   },
   categoryContent: {
-    padding: 20,
+    padding: scaleSize(20),
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: scaleSize(8),
   },
   categoryContentSelected: {
     backgroundColor: '#FFD700',
@@ -451,7 +452,7 @@ const styles = StyleSheet.create({
   categoryLabel: {
     color: 'rgba(255,255,255,0.6)',
     fontFamily: 'Poppins-SemiBold',
-    fontSize: 14,
+    fontSize: scaleFont(14),
   },
   categoryLabelSelected: {
     color: '#001f3f',
@@ -459,12 +460,12 @@ const styles = StyleSheet.create({
   chipContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: scaleSize(10),
   },
   chip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 10,
+    paddingHorizontal: scaleSize(16),
+    paddingVertical: scaleSize(10),
+    borderRadius: scaleSize(10),
     backgroundColor: 'rgba(255,255,255,0.05)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
@@ -476,7 +477,7 @@ const styles = StyleSheet.create({
   chipText: {
     color: 'rgba(255,255,255,0.6)',
     fontFamily: 'Poppins-Regular',
-    fontSize: 14,
+    fontSize: scaleFont(14),
   },
   chipTextSelected: {
     color: '#FFD700',
@@ -488,9 +489,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: '#001a35',
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+    paddingHorizontal: scaleSize(24),
+    paddingTop: scaleSize(16),
+    paddingBottom: Platform.OS === 'ios' ? scaleSize(40) : scaleSize(20),
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.1)',
   },
@@ -498,30 +499,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: scaleSize(16),
     backgroundColor: 'rgba(255,255,255,0.03)',
-    padding: 12,
-    borderRadius: 12,
+    padding: scaleSize(12),
+    borderRadius: scaleSize(12),
   },
   tickerLabel: {
     color: 'rgba(255,255,255,0.4)',
-    fontSize: 10,
+    fontSize: scaleFont(10),
     fontFamily: 'Poppins-SemiBold',
     textTransform: 'uppercase',
   },
   tickerValue: {
-    fontSize: 20,
+    fontSize: scaleFont(20),
     fontFamily: 'Poppins-SemiBold',
   },
   tickerRatingText: {
-    fontSize: 18,
+    fontSize: scaleFont(18),
     letterSpacing: 2,
   },
   nextBtn: {
     backgroundColor: '#FFD700',
     flexDirection: 'row',
-    paddingVertical: 16,
-    borderRadius: 12,
+    paddingVertical: scaleSize(16),
+    borderRadius: scaleSize(12),
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#FFD700',
@@ -533,7 +534,7 @@ const styles = StyleSheet.create({
   nextText: {
     color: '#001f3f',
     fontFamily: 'Poppins-SemiBold',
-    fontSize: 16,
+    fontSize: scaleFont(16),
   },
   disabledBtn: {
     opacity: 0.3,

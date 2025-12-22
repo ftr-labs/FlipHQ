@@ -23,6 +23,7 @@ import {
   getSearchCache 
 } from '../utils/logManager';
 import { getTokens, deductToken, refundToken, initializeTokens } from '../utils/tokenManager';
+import { scaleFont, scaleSize } from '../utils/responsive';
 
 export default function FindScreen({ navigation }) {
   const [permissionStatus, setPermissionStatus] = useState(null);
@@ -247,15 +248,15 @@ export default function FindScreen({ navigation }) {
       >
         <View style={styles.cardHeader}>
           <View style={styles.cardIconContainer}>
-            <Feather name="map-pin" size={18} color="#FFD700" />
+            <Feather name="map-pin" size={scaleSize(18)} color="#FFD700" />
           </View>
           <View style={styles.cardTitleContainer}>
-            <Text style={styles.cardTitle}>{item.name}</Text>
+            <Text style={styles.cardTitle} numberOfLines={2}>{item.name}</Text>
             <Text style={styles.distanceText}>{distMiles} miles away</Text>
           </View>
           <Feather 
             name={expanded ? "chevron-up" : "chevron-down"} 
-            size={20} 
+            size={scaleSize(20)} 
             color="rgba(255,255,255,0.4)" 
           />
         </View>
@@ -267,7 +268,7 @@ export default function FindScreen({ navigation }) {
             
             <View style={styles.actionRow}>
               <Pressable onPress={() => openInMaps(item.lat, item.lng)} style={styles.mapLink}>
-                <Feather name="navigation" size={14} color="#001f3f" />
+                <Feather name="navigation" size={scaleSize(14)} color="#001f3f" />
                 <Text style={styles.mapLinkText}>Open Maps</Text>
               </Pressable>
               
@@ -277,9 +278,9 @@ export default function FindScreen({ navigation }) {
               >
                 <Feather
                   name={interested[item.id] ? 'check-square' : 'square'}
-                  size={16}
+                  size={scaleSize(16)}
                   color={interested[item.id] ? '#001f3f' : '#FFD700'}
-                  style={{ marginRight: 6 }}
+                  style={{ marginRight: scaleSize(6) }}
                 />
                 <Text style={[styles.interestedText, interested[item.id] && styles.interestedTextActive]}>
                   Interested
@@ -298,15 +299,22 @@ export default function FindScreen({ navigation }) {
       
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color="#FFD700" />
+          <Feather name="arrow-left" size={scaleSize(24)} color="#FFD700" />
         </Pressable>
         <View style={styles.headerTitleContainer}>
           <Text style={styles.title}>Flip Spots</Text>
-          <Text style={styles.disclaimer}>Searches within a 25min drive</Text>
+          <Text 
+            style={styles.disclaimer}
+            numberOfLines={1}
+            adjustsFontSizeToFit={true}
+            minimumFontScale={0.7}
+          >
+            Searches within a 25min drive
+          </Text>
         </View>
         <View style={styles.headerRight}>
           <View style={styles.tokenBadge}>
-            <Feather name="zap" size={14} color="#FFD700" />
+            <Feather name="zap" size={scaleSize(14)} color="#FFD700" />
             <Text style={styles.tokenText}>{tokenCount}</Text>
           </View>
           <Pressable 
@@ -318,7 +326,7 @@ export default function FindScreen({ navigation }) {
             ]}
             disabled={loading}
           > 
-            <Feather name="refresh-cw" size={16} color="#001f3f" />
+            <Feather name="refresh-cw" size={scaleSize(16)} color="#001f3f" />
           </Pressable>
         </View>
       </View>
@@ -332,7 +340,7 @@ export default function FindScreen({ navigation }) {
 
       {showOutOfTokens && !loading && results.length === 0 && (
         <View style={styles.emptyContainer}>
-          <Feather name="zap" size={48} color="rgba(255,215,0,0.3)" />
+          <Feather name="zap" size={scaleSize(48)} color="rgba(255,215,0,0.3)" />
           <Text style={styles.outOfTokensTitle}>Out of Tokens</Text>
           <Text style={styles.message}>
             You need tokens to scan for spots. Each scan costs 1 token.
@@ -348,7 +356,7 @@ export default function FindScreen({ navigation }) {
 
       {!loading && !showOutOfTokens && results.length === 0 && message !== '' && (
         <View style={styles.emptyContainer}>
-          <Feather name="search" size={48} color="rgba(255,255,255,0.1)" />
+          <Feather name="search" size={scaleSize(48)} color="rgba(255,255,255,0.1)" />
           <Text style={styles.message}>{message}</Text>
         </View>
       )}
@@ -375,53 +383,54 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 60,
-    paddingBottom: 20,
-    paddingHorizontal: 24,
+    paddingTop: scaleSize(60),
+    paddingBottom: scaleSize(20),
+    paddingHorizontal: scaleSize(24),
   },
   backButton: {
-    padding: 4,
+    padding: scaleSize(4),
   },
   headerTitleContainer: {
     flex: 1,
     alignItems: 'center',
+    paddingHorizontal: scaleSize(8),
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: scaleSize(12),
   },
   tokenBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255,215,0,0.1)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: scaleSize(10),
+    paddingVertical: scaleSize(6),
+    borderRadius: scaleSize(12),
     borderWidth: 1,
     borderColor: 'rgba(255,215,0,0.3)',
-    gap: 6,
+    gap: scaleSize(6),
   },
   tokenText: {
     color: '#FFD700',
-    fontSize: 14,
+    fontSize: scaleFont(14),
     fontFamily: 'Poppins-SemiBold',
   },
   title: {
     color: '#fff',
-    fontSize: 24,
+    fontSize: scaleFont(24),
     fontFamily: 'Poppins-SemiBold',
   },
   disclaimer: {
     color: 'rgba(255,255,255,0.5)',
-    fontSize: 12,
+    fontSize: scaleFont(12),
     fontFamily: 'Poppins-Regular',
-    marginTop: 2,
+    marginTop: scaleSize(2),
   },
   scanBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: scaleSize(40),
+    height: scaleSize(40),
+    borderRadius: scaleSize(20),
     backgroundColor: '#FFD700',
     alignItems: 'center',
     justifyContent: 'center',
@@ -435,9 +444,9 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   listContent: {
-    paddingHorizontal: 24,
-    paddingTop: 10,
-    paddingBottom: 100,
+    paddingHorizontal: scaleSize(24),
+    paddingTop: scaleSize(10),
+    paddingBottom: scaleSize(100),
   },
   loaderContainer: {
     flex: 1,
@@ -447,35 +456,36 @@ const styles = StyleSheet.create({
   loaderText: {
     color: '#ccc',
     fontFamily: 'Poppins-Regular',
-    marginTop: 16,
+    fontSize: scaleFont(15),
+    marginTop: scaleSize(16),
   },
   emptyContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: scaleSize(40),
   },
   message: {
     color: 'rgba(255,255,255,0.6)',
     fontFamily: 'Poppins-Regular',
-    fontSize: 15,
-    marginTop: 16,
+    fontSize: scaleFont(15),
+    marginTop: scaleSize(16),
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: scaleSize(22),
   },
   outOfTokensTitle: {
     color: '#fff',
-    fontSize: 22,
+    fontSize: scaleFont(22),
     fontFamily: 'Poppins-SemiBold',
-    marginTop: 20,
-    marginBottom: 8,
+    marginTop: scaleSize(20),
+    marginBottom: scaleSize(8),
   },
   refillButton: {
-    marginTop: 24,
+    marginTop: scaleSize(24),
     backgroundColor: '#FFD700',
-    paddingHorizontal: 32,
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingHorizontal: scaleSize(32),
+    paddingVertical: scaleSize(14),
+    borderRadius: scaleSize(12),
     shadowColor: '#FFD700',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -484,14 +494,14 @@ const styles = StyleSheet.create({
   },
   refillButtonText: {
     color: '#001f3f',
-    fontSize: 16,
+    fontSize: scaleFont(16),
     fontFamily: 'Poppins-SemiBold',
   },
   card: {
     backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: scaleSize(18),
+    padding: scaleSize(16),
+    marginBottom: scaleSize(16),
     borderWidth: 1,
     borderColor: 'rgba(255,215,0,0.15)',
   },
@@ -504,47 +514,47 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cardIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: scaleSize(40),
+    height: scaleSize(40),
+    borderRadius: scaleSize(20),
     backgroundColor: 'rgba(255,215,0,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: scaleSize(12),
   },
   cardTitleContainer: {
     flex: 1,
   },
   cardTitle: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: scaleFont(16),
     fontFamily: 'Poppins-SemiBold',
   },
   distanceText: {
     color: 'rgba(255,255,255,0.4)',
-    fontSize: 12,
+    fontSize: scaleFont(12),
     fontFamily: 'Poppins-Regular',
-    marginTop: 2,
+    marginTop: scaleSize(2),
   },
   cardBody: {
-    marginTop: 16,
+    marginTop: scaleSize(16),
   },
   divider: {
     height: 1,
     backgroundColor: 'rgba(255,255,255,0.1)',
-    marginBottom: 16,
+    marginBottom: scaleSize(16),
   },
   address: {
     color: '#ccc',
     fontFamily: 'Poppins-Regular',
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 16,
+    fontSize: scaleFont(14),
+    lineHeight: scaleSize(20),
+    marginBottom: scaleSize(16),
   },
   actionRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: scaleSize(12),
   },
   mapLink: {
     flex: 1,
@@ -552,14 +562,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FFD700',
-    paddingVertical: 10,
-    borderRadius: 10,
+    paddingVertical: scaleSize(10),
+    borderRadius: scaleSize(10),
   },
   mapLinkText: {
     color: '#001f3f',
     fontFamily: 'Poppins-SemiBold',
-    fontSize: 13,
-    marginLeft: 6,
+    fontSize: scaleFont(13),
+    marginLeft: scaleSize(6),
   },
   interested: {
     flex: 1,
@@ -568,8 +578,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#FFD700',
-    paddingVertical: 10,
-    borderRadius: 10,
+    paddingVertical: scaleSize(10),
+    borderRadius: scaleSize(10),
   },
   interestedActive: {
     backgroundColor: '#FFD700',
@@ -577,7 +587,7 @@ const styles = StyleSheet.create({
   interestedText: {
     color: '#FFD700',
     fontFamily: 'Poppins-SemiBold',
-    fontSize: 13,
+    fontSize: scaleFont(13),
   },
   interestedTextActive: {
     color: '#001f3f',

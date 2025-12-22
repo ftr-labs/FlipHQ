@@ -20,6 +20,7 @@ import {
   removeSavedSpot 
 } from '../utils/logManager';
 import { calculateValuation } from '../utils/valuation';
+import { scaleFont, scaleSize, getResponsiveValue } from '../utils/responsive';
 
 const statusColors = {
   Found: '#1E90FF',
@@ -222,7 +223,7 @@ export default function MyFindsScreen({ navigation }) {
           onPress={() => handleDeleteLead(item)}
           style={styles.deleteLeadBtn}
         >
-          <Feather name="x" size={18} color="rgba(255,255,255,0.3)" />
+          <Feather name="x" size={scaleSize(18)} color="rgba(255,255,255,0.3)" />
         </Pressable>
       </View>
       <View style={styles.actionRow}>
@@ -230,14 +231,14 @@ export default function MyFindsScreen({ navigation }) {
           onPress={() => openInMaps(item.lat, item.lng)}
           style={styles.leadActionBtn}
         >
-          <Feather name="navigation" size={14} color="#FFD700" />
+          <Feather name="navigation" size={scaleSize(14)} color="#FFD700" />
           <Text style={styles.leadActionText}>Navigate</Text>
         </Pressable>
         <Pressable 
           onPress={() => navigation.navigate('Log', { fromSpot: item.name })}
           style={[styles.leadActionBtn, { borderColor: 'rgba(255,255,255,0.1)' }]}
         >
-          <Feather name="edit-2" size={14} color="#fff" />
+          <Feather name="edit-2" size={scaleSize(14)} color="#fff" />
           <Text style={[styles.leadActionText, { color: '#fff' }]}>Log Item</Text>
         </Pressable>
       </View>
@@ -250,10 +251,10 @@ export default function MyFindsScreen({ navigation }) {
       
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Feather name="arrow-left" size={24} color="#FFD700" />
+          <Feather name="arrow-left" size={scaleSize(24)} color="#FFD700" />
         </Pressable>
         <Text style={styles.title}>My Finds</Text>
-        <View style={{ width: 24 }} />
+        <View style={{ width: scaleSize(24) }} />
       </View>
 
       <View style={styles.tabContainer}>
@@ -331,7 +332,7 @@ export default function MyFindsScreen({ navigation }) {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalCard, { borderColor: 'rgba(255, 68, 68, 0.3)' }]}>
             <View style={styles.deleteIconContainer}>
-              <Feather name="alert-triangle" size={32} color="#ff4444" />
+              <Feather name="alert-triangle" size={scaleSize(32)} color="#ff4444" />
             </View>
             
             <Text style={styles.modalTitle}>Delete Item?</Text>
@@ -371,7 +372,7 @@ export default function MyFindsScreen({ navigation }) {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalCard, { borderColor: 'rgba(255, 68, 68, 0.3)' }]}>
             <View style={styles.deleteIconContainer}>
-              <Feather name="alert-triangle" size={32} color="#ff4444" />
+              <Feather name="alert-triangle" size={scaleSize(32)} color="#ff4444" />
             </View>
             
             <Text style={styles.modalTitle}>Remove Lead?</Text>
@@ -413,31 +414,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 60,
-    paddingBottom: 20,
-    paddingHorizontal: 24,
+    paddingTop: scaleSize(60),
+    paddingBottom: scaleSize(20),
+    paddingHorizontal: scaleSize(24),
   },
   backButton: {
-    padding: 4,
+    padding: scaleSize(4),
   },
   title: {
     color: '#fff',
-    fontSize: 24,
+    fontSize: scaleFont(24),
     fontFamily: 'Poppins-SemiBold',
   },
   tabContainer: {
     flexDirection: 'row',
     backgroundColor: 'rgba(255,255,255,0.05)',
-    marginHorizontal: 24,
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 20,
+    marginHorizontal: scaleSize(24),
+    borderRadius: scaleSize(12),
+    padding: scaleSize(4),
+    marginBottom: scaleSize(20),
   },
   tab: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: scaleSize(10),
     alignItems: 'center',
-    borderRadius: 10,
+    borderRadius: scaleSize(10),
   },
   activeTab: {
     backgroundColor: 'rgba(255,255,255,0.1)',
@@ -445,7 +446,7 @@ const styles = StyleSheet.create({
   tabText: {
     color: 'rgba(255,255,255,0.4)',
     fontFamily: 'Poppins-SemiBold',
-    fontSize: 14,
+    fontSize: scaleFont(14),
   },
   activeTabText: {
     color: '#FFD700',
@@ -453,10 +454,10 @@ const styles = StyleSheet.create({
   statsHeader: {
     flexDirection: 'row',
     backgroundColor: 'rgba(255,215,0,0.05)',
-    marginHorizontal: 24,
-    borderRadius: 18,
-    padding: 20,
-    marginBottom: 20,
+    marginHorizontal: scaleSize(24),
+    borderRadius: scaleSize(18),
+    padding: scaleSize(20),
+    marginBottom: scaleSize(20),
     borderWidth: 1,
     borderColor: 'rgba(255,215,0,0.1)',
   },
@@ -466,29 +467,29 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     color: 'rgba(255,255,255,0.5)',
-    fontSize: 12,
+    fontSize: scaleFont(12),
     fontFamily: 'Poppins-Regular',
-    marginBottom: 4,
+    marginBottom: scaleSize(4),
   },
   summaryValue: {
     color: '#fff',
-    fontSize: 20,
+    fontSize: scaleFont(20),
     fontFamily: 'Poppins-SemiBold',
   },
   summaryDivider: {
     width: 1,
     backgroundColor: 'rgba(255,255,255,0.1)',
-    marginHorizontal: 10,
+    marginHorizontal: scaleSize(10),
   },
   listContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 100,
+    paddingHorizontal: scaleSize(24),
+    paddingBottom: scaleSize(100),
   },
   card: {
     backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: scaleSize(18),
+    padding: scaleSize(16),
+    marginBottom: scaleSize(16),
     borderLeftWidth: 4,
     borderLeftColor: 'transparent',
   },
@@ -496,30 +497,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: scaleSize(16),
   },
   cardTitleContainer: {
     flex: 1,
-    marginRight: 12,
+    marginRight: scaleSize(12),
   },
   itemName: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: scaleFont(16),
     fontFamily: 'Poppins-SemiBold',
   },
   itemCategory: {
     color: 'rgba(255,255,255,0.4)',
-    fontSize: 12,
+    fontSize: scaleFont(12),
     fontFamily: 'Poppins-Regular',
-    marginTop: 2,
+    marginTop: scaleSize(2),
   },
   statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: scaleSize(10),
+    paddingVertical: scaleSize(4),
+    borderRadius: scaleSize(8),
   },
   statusText: {
-    fontSize: 11,
+    fontSize: scaleFont(11),
     fontFamily: 'Poppins-SemiBold',
   },
   cardFooter: {
@@ -527,28 +528,28 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.05)',
-    paddingTop: 12,
+    paddingTop: scaleSize(12),
   },
   statBox: {
     alignItems: 'flex-start',
   },
   statLabel: {
     color: 'rgba(255,255,255,0.3)',
-    fontSize: 10,
+    fontSize: scaleFont(10),
     fontFamily: 'Poppins-Regular',
-    marginBottom: 2,
+    marginBottom: scaleSize(2),
   },
   statValue: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: scaleFont(14),
     fontFamily: 'Poppins-SemiBold',
   },
   deleteLeadBtn: {
-    padding: 4,
+    padding: scaleSize(4),
   },
   actionRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: scaleSize(12),
   },
   leadActionBtn: {
     flex: 1,
@@ -557,48 +558,48 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#FFD700',
-    paddingVertical: 10,
-    borderRadius: 10,
-    gap: 8,
+    paddingVertical: scaleSize(10),
+    borderRadius: scaleSize(10),
+    gap: scaleSize(8),
   },
   leadActionText: {
     color: '#FFD700',
     fontFamily: 'Poppins-SemiBold',
-    fontSize: 13,
+    fontSize: scaleFont(13),
   },
   emptyContainer: {
-    paddingTop: 60,
+    paddingTop: scaleSize(60),
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: scaleSize(40),
   },
   emptyText: {
     color: 'rgba(255,255,255,0.4)',
     fontFamily: 'Poppins-Regular',
-    fontSize: 15,
-    marginTop: 16,
+    fontSize: scaleFont(15),
+    marginTop: scaleSize(16),
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: scaleSize(22),
   },
   emptyBtn: {
-    marginTop: 24,
+    marginTop: scaleSize(24),
     backgroundColor: '#FFD700',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingHorizontal: scaleSize(24),
+    paddingVertical: scaleSize(12),
+    borderRadius: scaleSize(12),
   },
   emptyBtnText: {
     color: '#001f3f',
     fontFamily: 'Poppins-SemiBold',
-    fontSize: 14,
+    fontSize: scaleFont(14),
   },
   disclosureContainer: {
-    paddingBottom: 12,
-    paddingTop: 4,
+    paddingBottom: scaleSize(12),
+    paddingTop: scaleSize(4),
   },
   disclosureText: {
     color: 'rgba(255,255,255,0.3)',
-    fontSize: 11,
+    fontSize: scaleFont(11),
     fontFamily: 'Poppins-Regular',
     fontStyle: 'italic',
     textAlign: 'center',
@@ -608,50 +609,51 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    padding: scaleSize(24),
   },
   modalCard: {
     width: '100%',
+    maxWidth: getResponsiveValue(scaleSize(320), scaleSize(360), scaleSize(400)),
     backgroundColor: '#001a35',
-    borderRadius: 24,
-    padding: 24,
+    borderRadius: scaleSize(24),
+    padding: scaleSize(24),
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255, 215, 0, 0.2)',
   },
   deleteIconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: scaleSize(64),
+    height: scaleSize(64),
+    borderRadius: scaleSize(32),
     backgroundColor: 'rgba(255, 68, 68, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: scaleSize(20),
   },
   modalTitle: {
-    fontSize: 22,
+    fontSize: scaleFont(22),
     fontFamily: 'Poppins-SemiBold',
     color: '#fff',
-    marginBottom: 12,
+    marginBottom: scaleSize(12),
     textAlign: 'center',
   },
   modalSubtitle: {
-    fontSize: 14,
+    fontSize: scaleFont(14),
     fontFamily: 'Poppins-Regular',
     color: 'rgba(255, 255, 255, 0.6)',
     textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 32,
+    lineHeight: scaleSize(20),
+    marginBottom: scaleSize(32),
   },
   modalActionRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: scaleSize(12),
     width: '100%',
   },
   modalBtn: {
     flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: scaleSize(14),
+    borderRadius: scaleSize(12),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -662,7 +664,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ff4444',
   },
   modalBtnText: {
-    fontSize: 14,
+    fontSize: scaleFont(14),
     fontFamily: 'Poppins-SemiBold',
     color: 'rgba(255, 255, 255, 0.8)',
   },

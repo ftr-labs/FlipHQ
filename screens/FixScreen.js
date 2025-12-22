@@ -19,6 +19,7 @@ import { useFocusEffect, CommonActions } from '@react-navigation/native';
 import { getLoggedItems, updateItemStatus } from '../utils/logManager';
 import { calculateValuation } from '../utils/valuation';
 import { categoryToolkits } from '../constants/valuationMetadata';
+import { scaleFont, scaleSize, getResponsiveValue } from '../utils/responsive';
 
 export default function FixScreen({ navigation }) {
   const [items, setItems] = useState([]);
@@ -96,7 +97,7 @@ export default function FixScreen({ navigation }) {
     if (!selectedItem) {
       return (
         <View style={styles.emptyState}>
-          <Feather name="tool" size={48} color="rgba(255,255,255,0.1)" />
+          <Feather name="tool" size={scaleSize(48)} color="rgba(255,255,255,0.1)" />
           <Text style={styles.emptyText}>No items to fix right now. Go log something first!</Text>
           <Pressable 
             style={styles.emptyBtn}
@@ -151,7 +152,7 @@ export default function FixScreen({ navigation }) {
 
         {/* YouTube Action */}
         <Pressable style={styles.youtubeBtn} onPress={openYouTube}>
-          <Feather name="play" size={20} color="#001f3f" />
+          <Feather name="play" size={scaleSize(20)} color="#001f3f" />
           <Text style={styles.youtubeBtnText}>Watch Repair Guides</Text>
         </Pressable>
         <Text style={styles.disclosureText}>
@@ -164,7 +165,7 @@ export default function FixScreen({ navigation }) {
           <View style={styles.toolkitGrid}>
             {toolkit.map((tool, index) => (
               <View key={index} style={styles.toolItem}>
-                <Feather name="check-circle" size={14} color="#FFD700" />
+                <Feather name="check-circle" size={scaleSize(14)} color="#FFD700" />
                 <Text style={styles.toolText}>{tool}</Text>
               </View>
             ))}
@@ -232,20 +233,20 @@ export default function FixScreen({ navigation }) {
           }} 
           style={styles.backButton}
         >
-          <Feather name="arrow-left" size={24} color="#FFD700" />
+          <Feather name="arrow-left" size={scaleSize(24)} color="#FFD700" />
         </Pressable>
         <Text style={styles.title}>Fix Hub</Text>
-        <View style={{ width: 24 }} />
+        <View style={{ width: scaleSize(24) }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {items.length > 0 && (
           <Pressable style={styles.selectBox} onPress={() => setShowModal(true)}>
-            <Feather name="package" size={16} color="#FFD700" />
+            <Feather name="package" size={scaleSize(16)} color="#FFD700" />
             <Text style={styles.selectText}>
               {selectedItem ? selectedItem.name : 'Choose an item to fix'}
             </Text>
-            <Feather name="chevron-down" size={16} color="rgba(255,255,255,0.4)" />
+            <Feather name="chevron-down" size={scaleSize(16)} color="rgba(255,255,255,0.4)" />
           </Pressable>
         )}
 
@@ -258,7 +259,7 @@ export default function FixScreen({ navigation }) {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Your Fixable Finds</Text>
               <Pressable onPress={() => setShowModal(false)}>
-                <Feather name="x" size={24} color="#fff" />
+                <Feather name="x" size={scaleSize(24)} color="#fff" />
               </Pressable>
             </View>
             <FlatList
@@ -280,7 +281,7 @@ export default function FixScreen({ navigation }) {
                     <Text style={styles.optionSub}>{item.category} • {item.condition}</Text>
                   </View>
                   {selectedItem?.id === item.id && (
-                    <Feather name="check" size={20} color="#FFD700" />
+                    <Feather name="check" size={scaleSize(20)} color="#FFD700" />
                   )}
                 </Pressable>
               )}
@@ -363,41 +364,41 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 60,
-    paddingBottom: 20,
-    paddingHorizontal: 24,
+    paddingTop: scaleSize(60),
+    paddingBottom: scaleSize(20),
+    paddingHorizontal: scaleSize(24),
   },
   backButton: {
-    padding: 4,
+    padding: scaleSize(4),
   },
   title: {
-    fontSize: 24,
+    fontSize: scaleFont(24),
     color: '#fff',
     fontFamily: 'Poppins-SemiBold',
   },
   content: {
-    paddingBottom: 40,
-    paddingHorizontal: 24,
+    paddingBottom: scaleSize(40),
+    paddingHorizontal: scaleSize(24),
   },
   selectBox: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.05)',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 24,
+    padding: scaleSize(16),
+    borderRadius: scaleSize(12),
+    marginBottom: scaleSize(24),
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
   },
   selectText: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: scaleSize(12),
     color: '#FFD700',
-    fontSize: 15,
+    fontSize: scaleFont(15),
     fontFamily: 'Poppins-SemiBold',
   },
   detailsBox: {
-    gap: 24,
+    gap: scaleSize(24),
   },
   itemHeader: {
     flexDirection: 'row',
@@ -406,31 +407,31 @@ const styles = StyleSheet.create({
   },
   label: {
     color: 'rgba(255,255,255,0.4)',
-    fontSize: 12,
+    fontSize: scaleFont(12),
     fontFamily: 'Poppins-SemiBold',
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
   itemName: {
     color: '#fff',
-    fontSize: 22,
+    fontSize: scaleFont(22),
     fontFamily: 'Poppins-SemiBold',
-    marginTop: 4,
+    marginTop: scaleSize(4),
   },
   statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingHorizontal: scaleSize(12),
+    paddingVertical: scaleSize(6),
+    borderRadius: scaleSize(8),
   },
   statusText: {
     color: '#FFD700',
-    fontSize: 12,
+    fontSize: scaleFont(12),
     fontFamily: 'Poppins-SemiBold',
   },
   scoreCard: {
     backgroundColor: 'rgba(255,255,255,0.03)',
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: scaleSize(16),
+    padding: scaleSize(20),
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.05)',
   },
@@ -438,31 +439,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: scaleSize(12),
   },
   scoreLabel: {
     color: '#fff',
     fontFamily: 'Poppins-SemiBold',
-    fontSize: 16,
+    fontSize: scaleFont(16),
   },
   scoreValue: {
     color: '#FFD700',
     fontFamily: 'Poppins-SemiBold',
-    fontSize: 18,
+    fontSize: scaleFont(18),
   },
   progressBarBg: {
-    height: 8,
+    height: scaleSize(8),
     backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 4,
-    marginBottom: 12,
+    borderRadius: scaleSize(4),
+    marginBottom: scaleSize(12),
   },
   progressBarFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: scaleSize(4),
   },
   scoreHint: {
     color: 'rgba(255,255,255,0.4)',
-    fontSize: 12,
+    fontSize: scaleFont(12),
     fontFamily: 'Poppins-Regular',
   },
   youtubeBtn: {
@@ -470,9 +471,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 12,
-    gap: 10,
+    paddingVertical: scaleSize(16),
+    borderRadius: scaleSize(12),
+    gap: scaleSize(10),
     shadowColor: '#FFD700',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -482,109 +483,111 @@ const styles = StyleSheet.create({
   youtubeBtnText: {
     color: '#001f3f',
     fontFamily: 'Poppins-SemiBold',
-    fontSize: 16,
+    fontSize: scaleFont(16),
   },
   disclosureText: {
     color: 'rgba(255,255,255,0.3)',
-    fontSize: 11,
+    fontSize: scaleFont(11),
     fontFamily: 'Poppins-Regular',
     textAlign: 'center',
-    marginTop: 8,
-    lineHeight: 16,
+    marginTop: scaleSize(8),
+    lineHeight: scaleSize(16),
     fontStyle: 'italic',
   },
   toolkitSection: {
     backgroundColor: 'rgba(255,255,255,0.03)',
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: scaleSize(16),
+    padding: scaleSize(20),
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.05)',
   },
   sectionTitle: {
     color: '#fff',
     fontFamily: 'Poppins-SemiBold',
-    fontSize: 16,
-    marginBottom: 16,
+    fontSize: scaleFont(16),
+    marginBottom: scaleSize(16),
   },
   toolkitGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: scaleSize(12),
   },
   toolItem: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.05)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    gap: 8,
+    paddingHorizontal: scaleSize(12),
+    paddingVertical: scaleSize(8),
+    borderRadius: scaleSize(8),
+    gap: scaleSize(8),
   },
   toolText: {
     color: '#fff',
-    fontSize: 13,
+    fontSize: scaleFont(13),
     fontFamily: 'Poppins-Regular',
   },
   financialRow: {
     flexDirection: 'row',
-    gap: 16,
+    gap: scaleSize(16),
   },
   financialBox: {
     flex: 1,
     backgroundColor: 'rgba(255,255,255,0.03)',
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: scaleSize(16),
+    padding: scaleSize(16),
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.05)',
   },
   finLabel: {
     color: 'rgba(255,255,255,0.4)',
-    fontSize: 11,
+    fontSize: scaleFont(11),
     fontFamily: 'Poppins-SemiBold',
     textTransform: 'uppercase',
   },
   finValue: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: scaleFont(18),
     fontFamily: 'Poppins-SemiBold',
-    marginTop: 4,
+    marginTop: scaleSize(4),
   },
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 60,
+    paddingTop: scaleSize(60),
   },
   emptyText: {
     color: 'rgba(255,255,255,0.4)',
     textAlign: 'center',
     fontFamily: 'Poppins-Regular',
-    fontSize: 16,
-    marginTop: 16,
-    lineHeight: 24,
+    fontSize: scaleFont(16),
+    marginTop: scaleSize(16),
+    lineHeight: scaleSize(24),
   },
   emptyBtn: {
-    marginTop: 24,
+    marginTop: scaleSize(24),
     backgroundColor: '#FFD700',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 10,
+    paddingHorizontal: scaleSize(24),
+    paddingVertical: scaleSize(12),
+    borderRadius: scaleSize(10),
   },
   emptyBtnText: {
     color: '#001f3f',
     fontFamily: 'Poppins-SemiBold',
+    fontSize: scaleFont(14),
   },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    padding: scaleSize(24),
   },
   modalContent: {
     backgroundColor: '#001a35',
-    borderRadius: 24,
-    padding: 24,
+    borderRadius: scaleSize(24),
+    padding: scaleSize(24),
     width: '100%',
+    maxWidth: getResponsiveValue(scaleSize(320), scaleSize(360), scaleSize(400)),
     borderWidth: 1,
     borderColor: 'rgba(255, 215, 0, 0.2)',
   },
@@ -592,41 +595,41 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: scaleSize(24),
   },
   modalTitle: {
     color: '#fff',
-    fontSize: 22,
+    fontSize: scaleFont(22),
     fontFamily: 'Poppins-SemiBold',
-    marginBottom: 8,
+    marginBottom: scaleSize(8),
   },
   modalSubtitle: {
     color: 'rgba(255,255,255,0.6)',
-    fontSize: 14,
+    fontSize: scaleFont(14),
     fontFamily: 'Poppins-Regular',
-    marginBottom: 24,
+    marginBottom: scaleSize(24),
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: scaleSize(20),
   },
   input: {
     backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: scaleSize(12),
+    padding: scaleSize(16),
     color: '#fff',
     fontFamily: 'Poppins-Regular',
-    fontSize: 16,
+    fontSize: scaleFont(16),
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
-    marginBottom: 24,
+    marginBottom: scaleSize(24),
   },
   modalButtons: {
     flexDirection: 'row',
-    gap: 12,
+    gap: scaleSize(12),
   },
   modalBtn: {
     flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: scaleSize(14),
+    borderRadius: scaleSize(12),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -639,13 +642,13 @@ const styles = StyleSheet.create({
   modalBtnText: {
     color: '#fff',
     fontFamily: 'Poppins-SemiBold',
-    fontSize: 14,
+    fontSize: scaleFont(14),
   },
   itemOption: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 16,
+    paddingVertical: scaleSize(16),
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.05)',
   },
@@ -654,23 +657,23 @@ const styles = StyleSheet.create({
   },
   optionName: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: scaleFont(16),
     fontFamily: 'Poppins-SemiBold',
   },
   optionSub: {
     color: 'rgba(255,255,255,0.4)',
-    fontSize: 12,
+    fontSize: scaleFont(12),
     fontFamily: 'Poppins-Regular',
-    marginTop: 2,
+    marginTop: scaleSize(2),
   },
   actionButtons: {
-    gap: 12,
-    marginTop: 8,
+    gap: scaleSize(12),
+    marginTop: scaleSize(8),
   },
   fixedBtn: {
     backgroundColor: '#FFD700',
-    paddingVertical: 16,
-    borderRadius: 12,
+    paddingVertical: scaleSize(16),
+    borderRadius: scaleSize(12),
     alignItems: 'center',
     shadowColor: '#FFD700',
     shadowOffset: { width: 0, height: 4 },
@@ -681,18 +684,18 @@ const styles = StyleSheet.create({
   fixedBtnText: {
     color: '#001f3f',
     fontFamily: 'Poppins-SemiBold',
-    fontSize: 16,
+    fontSize: scaleFont(16),
   },
   skipBtn: {
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)',
-    paddingVertical: 16,
-    borderRadius: 12,
+    paddingVertical: scaleSize(16),
+    borderRadius: scaleSize(12),
     alignItems: 'center',
   },
   skipBtnText: {
     color: 'rgba(255,255,255,0.6)',
     fontFamily: 'Poppins-SemiBold',
-    fontSize: 14,
+    fontSize: scaleFont(14),
   },
 });

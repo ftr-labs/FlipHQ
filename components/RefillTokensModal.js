@@ -15,6 +15,7 @@ import { Feather } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import * as InAppPurchases from 'expo-in-app-purchases';
 import { getTokens, addTokens } from '../utils/tokenManager';
+import { scaleFont, scaleSize, getResponsiveValue } from '../utils/responsive';
 
 // Product ID mapping for iOS and Android
 const PRODUCT_IDS = {
@@ -52,6 +53,7 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
   const [currentTokens, setCurrentTokens] = useState(0);
   const [purchasing, setPurchasing] = useState(false);
   const [purchasingBundleId, setPurchasingBundleId] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -68,9 +70,18 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
   };
 
   const connectToStore = async () => {
+    // Don't reconnect if already connected
+    if (isConnected) return;
+    
     try {
       await InAppPurchases.connectAsync();
+      setIsConnected(true);
     } catch (error) {
+      // Handle "already connected" error gracefully
+      if (error.message && error.message.includes('already connected')) {
+        setIsConnected(true);
+        return;
+      }
       if (__DEV__) {
         console.error('Failed to connect to store:', error);
       }
@@ -84,8 +95,10 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
     setPurchasingBundleId(bundle.id);
 
     try {
-      // Connect to store if not already connected
-      await InAppPurchases.connectAsync();
+      // Ensure we're connected before purchasing
+      if (!isConnected) {
+        await connectToStore();
+      }
 
       // Get the product ID for this bundle
       const productId = PRODUCT_IDS[bundle.id];
@@ -131,9 +144,18 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
       if (__DEV__) {
         console.error('Purchase error:', error);
       }
+      // Provide user-friendly error messages
+      let errorMessage = 'Unable to complete purchase. Please try again.';
+      if (error.message) {
+        if (error.message.includes('already connected')) {
+          errorMessage = 'Please try your purchase again.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
       Alert.alert(
         'Purchase Failed',
-        error.message || 'Unable to complete purchase. Please try again.',
+        errorMessage,
         [{ text: 'OK' }]
       );
     } finally {
@@ -155,14 +177,14 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Refill Tokens</Text>
               <Pressable onPress={onClose} style={styles.closeButton}>
-                <Feather name="x" size={24} color="#fff" />
+                <Feather name="x" size={scaleSize(24)} color="#fff" />
               </Pressable>
             </View>
 
             <View style={styles.currentTokensBox}>
               <Text style={styles.currentTokensLabel}>Current Tokens</Text>
               <View style={styles.tokenCountDisplay}>
-                <Feather name="zap" size={20} color="#FFD700" />
+                <Feather name="zap" size={scaleSize(20)} color="#FFD700" />
                 <Text style={styles.tokenCountText}>{currentTokens}</Text>
               </View>
             </View>
@@ -190,7 +212,7 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
                     )}
                     <Text style={styles.bundleName}>{bundle.name}</Text>
                     <View style={styles.bundleTokens}>
-                      <Feather name="zap" size={18} color="#FFD700" />
+                      <Feather name="zap" size={scaleSize(18)} color="#FFD700" />
                       <Text style={styles.bundleTokensText}>{bundle.tokens} Tokens</Text>
                     </View>
                     <Text style={styles.bundlePrice}>{bundle.price}</Text>
@@ -221,13 +243,13 @@ const styles = StyleSheet.create({
   },
   container: {
     width: '100%',
-    maxWidth: 500,
-    padding: 24,
+    maxWidth: getResponsiveValue(scaleSize(340), scaleSize(400), scaleSize(500)),
+    padding: scaleSize(24),
   },
   modalContent: {
     backgroundColor: '#001a35',
-    borderRadius: 24,
-    padding: 24,
+    borderRadius: scaleSize(24),
+    padding: scaleSize(24),
     borderWidth: 1,
     borderColor: 'rgba(255,215,0,0.2)',
   },
@@ -235,101 +257,101 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: scaleSize(24),
   },
   modalTitle: {
     color: '#fff',
-    fontSize: 24,
+    fontSize: scaleFont(24),
     fontFamily: 'Poppins-SemiBold',
   },
   closeButton: {
-    padding: 4,
+    padding: scaleSize(4),
   },
   currentTokensBox: {
     backgroundColor: 'rgba(255,215,0,0.1)',
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: scaleSize(16),
+    padding: scaleSize(20),
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: scaleSize(24),
     borderWidth: 1,
     borderColor: 'rgba(255,215,0,0.2)',
   },
   currentTokensLabel: {
     color: 'rgba(255,255,255,0.4)',
-    fontSize: 12,
+    fontSize: scaleFont(12),
     fontFamily: 'Poppins-SemiBold',
     textTransform: 'uppercase',
-    marginBottom: 8,
+    marginBottom: scaleSize(8),
   },
   tokenCountDisplay: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: scaleSize(8),
   },
   tokenCountText: {
     color: '#FFD700',
-    fontSize: 32,
+    fontSize: scaleFont(32),
     fontFamily: 'Poppins-SemiBold',
   },
   sectionTitle: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: scaleFont(16),
     fontFamily: 'Poppins-SemiBold',
-    marginBottom: 16,
+    marginBottom: scaleSize(16),
   },
   bundlesContainer: {
-    gap: 12,
-    marginBottom: 24,
+    gap: scaleSize(12),
+    marginBottom: scaleSize(24),
   },
   bundleCard: {
     backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 16,
-    padding: 14,
+    borderRadius: scaleSize(16),
+    padding: scaleSize(14),
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
     position: 'relative',
   },
   badge: {
     position: 'absolute',
-    top: -8,
-    right: 16,
+    top: scaleSize(-8),
+    right: scaleSize(16),
     backgroundColor: '#FFD700',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: scaleSize(12),
+    paddingVertical: scaleSize(4),
+    borderRadius: scaleSize(8),
   },
   badgeText: {
     color: '#001f3f',
-    fontSize: 10,
+    fontSize: scaleFont(10),
     fontFamily: 'Poppins-SemiBold',
     letterSpacing: 0.5,
   },
   bundleName: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: scaleFont(16),
     fontFamily: 'Poppins-SemiBold',
-    marginBottom: 8,
+    marginBottom: scaleSize(8),
   },
   bundleTokens: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 6,
+    gap: scaleSize(8),
+    marginBottom: scaleSize(6),
   },
   bundleTokensText: {
     color: '#FFD700',
-    fontSize: 14,
+    fontSize: scaleFont(14),
     fontFamily: 'Poppins-SemiBold',
   },
   bundlePrice: {
     color: '#fff',
-    fontSize: 20,
+    fontSize: scaleFont(20),
     fontFamily: 'Poppins-SemiBold',
-    marginBottom: 4,
+    marginBottom: scaleSize(4),
   },
   bundleDescription: {
     color: 'rgba(255,255,255,0.4)',
-    fontSize: 12,
+    fontSize: scaleFont(12),
     fontFamily: 'Poppins-Regular',
   },
   bundleCardDisabled: {
@@ -342,14 +364,14 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    borderRadius: 16,
+    borderRadius: scaleSize(16),
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
+    gap: scaleSize(8),
   },
   purchasingText: {
     color: '#FFD700',
-    fontSize: 12,
+    fontSize: scaleFont(12),
     fontFamily: 'Poppins-SemiBold',
   },
 });
