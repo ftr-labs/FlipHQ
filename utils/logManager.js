@@ -43,13 +43,13 @@ export const getLoggedItems = async () => {
   }
 };
 
-export const updateItemStatus = async (itemId, newStatus) => {
+export const updateItemStatus = async (itemId, newStatus, additionalData = {}) => {
   try {
     const existing = await AsyncStorage.getItem(STORAGE_KEYS.INVENTORY);
     if (!existing) return;
     const items = JSON.parse(existing);
     const updated = items.map(item => 
-      item.id === itemId ? { ...item, status: newStatus } : item
+      item.id === itemId ? { ...item, status: newStatus, ...additionalData } : item
     );
     await AsyncStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(updated));
   } catch (e) {

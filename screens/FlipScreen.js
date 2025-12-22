@@ -8,6 +8,9 @@ import {
   ScrollView,
   FlatList,
   Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Feather } from '@expo/vector-icons';
@@ -28,6 +31,8 @@ export default function FlipScreen({ navigation }) {
   const [items, setItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [showSellPriceModal, setShowSellPriceModal] = useState(false);
+  const [sellPrice, setSellPrice] = useState('');
   const [checkedItems, setCheckedItems] = useState({});
 
   useFocusEffect(
@@ -158,16 +163,9 @@ export default function FlipScreen({ navigation }) {
         {/* Status Update Button */}
         <Pressable 
           style={styles.flippedBtn}
-          onPress={async () => {
+          onPress={() => {
             if (!selectedItem) return;
-            await updateItemStatus(selectedItem.id, 'Flipped');
-            await loadItems();
-            navigation.dispatch(
-              CommonActions.reset({
-                index: 0,
-                routes: [{ name: 'Home' }],
-              })
-            );
+            setShowSellPriceModal(true);
           }}
         >
           <Text style={styles.flippedBtnText}>Mark as Flipped</Text>
@@ -253,6 +251,67 @@ export default function FlipScreen({ navigation }) {
             />
           </View>
         </View>
+      </Modal>
+
+      {/* Sell Price Input Modal */}
+      <Modal
+        visible={showSellPriceModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setShowSellPriceModal(false);
+          setSellPrice('');
+        }}
+      >
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Sell Price</Text>
+            <Text style={styles.modalSubtitle}>How much did you sell this item for?</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="0.00"
+              placeholderTextColor="rgba(255,255,255,0.3)"
+              value={sellPrice}
+              onChangeText={setSellPrice}
+              keyboardType="decimal-pad"
+              keyboardAppearance="dark"
+              autoFocus
+            />
+            <View style={styles.modalButtons}>
+              <Pressable 
+                style={[styles.modalBtn, styles.modalCancelBtn]}
+                onPress={() => {
+                  setShowSellPriceModal(false);
+                  setSellPrice('');
+                }}
+              >
+                <Text style={styles.modalBtnText}>Cancel</Text>
+              </Pressable>
+              <Pressable 
+                style={[styles.modalBtn, styles.modalSaveBtn]}
+                onPress={async () => {
+                  if (!selectedItem) return;
+                  const price = parseFloat(sellPrice) || 0;
+                  await updateItemStatus(selectedItem.id, 'Flipped', { sellPrice: price });
+                  setShowSellPriceModal(false);
+                  setSellPrice('');
+                  await loadItems();
+                  navigation.dispatch(
+                    CommonActions.reset({
+                      index: 0,
+                      routes: [{ name: 'Home' }],
+                    })
+                  );
+                }}
+              >
+                <Text style={[styles.modalBtnText, { color: '#001f3f' }]}>Save</Text>
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
@@ -484,15 +543,18 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
   },
   modalContent: {
     backgroundColor: '#001a35',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderRadius: 24,
     padding: 24,
-    maxHeight: '80%',
+    width: '100%',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.2)',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -502,8 +564,50 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     color: '#fff',
-    fontSize: 20,
+    fontSize: 22,
     fontFamily: 'Poppins-SemiBold',
+    marginBottom: 8,
+  },
+  modalSubtitle: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 14,
+    fontFamily: 'Poppins-Regular',
+    marginBottom: 24,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  input: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 12,
+    padding: 16,
+    color: '#fff',
+    fontFamily: 'Poppins-Regular',
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    marginBottom: 24,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCancelBtn: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  modalSaveBtn: {
+    backgroundColor: '#FFD700',
+  },
+  modalBtnText: {
+    color: '#fff',
+    fontFamily: 'Poppins-SemiBold',
+    fontSize: 14,
   },
   itemOption: {
     flexDirection: 'row',

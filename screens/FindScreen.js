@@ -226,7 +226,7 @@ export default function FindScreen({ navigation }) {
         await refundToken();
         await loadTokenCount();
       }
-      setMessage('Failed to fetch spots. Token refunded.');
+      setMessage('Failed to fetch spots.');
     } finally {
       setLoading(false);
     }

@@ -153,7 +153,7 @@ export default function FlipBotScreen({ navigation }) {
       const errorMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: `Sorry, I'm having trouble right now: ${error.message}.${needsNewToken ? ' Token refunded.' : ''} Try again?`,
+        content: `Sorry, I'm having trouble right now: ${error.message}. Try again?`,
         timestamp: new Date(),
         isError: true,
       };

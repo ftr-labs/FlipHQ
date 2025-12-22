@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Feather } from '@expo/vector-icons';
+import { CommonActions } from '@react-navigation/native';
 
 const steps = [
   {
@@ -97,7 +98,14 @@ export default function HowItWorksScreen({ navigation }) {
           <Text style={styles.footerText}>Ready to start your hunt?</Text>
           <Pressable 
             style={styles.ctaBtn}
-            onPress={() => navigation.navigate('Home')}
+            onPress={() => {
+              navigation.dispatch(
+                CommonActions.reset({
+                  index: 0,
+                  routes: [{ name: 'Home' }],
+                })
+              );
+            }}
           >
             <Text style={styles.ctaBtnText}>Get Started</Text>
           </Pressable>

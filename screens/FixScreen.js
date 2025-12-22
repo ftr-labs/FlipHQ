@@ -9,6 +9,9 @@ import {
   FlatList,
   Modal,
   Linking,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Feather } from '@expo/vector-icons';
@@ -21,6 +24,8 @@ export default function FixScreen({ navigation }) {
   const [items, setItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [showFixCostModal, setShowFixCostModal] = useState(false);
+  const [fixCost, setFixCost] = useState('');
 
   useFocusEffect(
     useCallback(() => {
@@ -182,17 +187,9 @@ export default function FixScreen({ navigation }) {
         <View style={styles.actionButtons}>
           <Pressable 
             style={styles.fixedBtn}
-            onPress={async () => {
+            onPress={() => {
               if (!selectedItem) return;
-              await updateItemStatus(selectedItem.id, 'Fixed');
-              await loadItems();
-              // Navigate to Home
-              navigation.dispatch(
-                CommonActions.reset({
-                  index: 0,
-                  routes: [{ name: 'Home' }],
-                })
-              );
+              setShowFixCostModal(true);
             }}
           >
             <Text style={styles.fixedBtnText}>Mark as Fixed</Text>
@@ -290,6 +287,68 @@ export default function FixScreen({ navigation }) {
             />
           </View>
         </View>
+      </Modal>
+
+      {/* Fix Cost Input Modal */}
+      <Modal
+        visible={showFixCostModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setShowFixCostModal(false);
+          setFixCost('');
+        }}
+      >
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Fix Cost</Text>
+            <Text style={styles.modalSubtitle}>How much did it cost to fix this item?</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="0.00"
+              placeholderTextColor="rgba(255,255,255,0.3)"
+              value={fixCost}
+              onChangeText={setFixCost}
+              keyboardType="decimal-pad"
+              keyboardAppearance="dark"
+              autoFocus
+            />
+            <View style={styles.modalButtons}>
+              <Pressable 
+                style={[styles.modalBtn, styles.modalCancelBtn]}
+                onPress={() => {
+                  setShowFixCostModal(false);
+                  setFixCost('');
+                }}
+              >
+                <Text style={styles.modalBtnText}>Cancel</Text>
+              </Pressable>
+              <Pressable 
+                style={[styles.modalBtn, styles.modalSaveBtn]}
+                onPress={async () => {
+                  if (!selectedItem) return;
+                  const cost = parseFloat(fixCost) || 0;
+                  await updateItemStatus(selectedItem.id, 'Fixed', { fixCost: cost });
+                  setShowFixCostModal(false);
+                  setFixCost('');
+                  await loadItems();
+                  // Navigate to Home
+                  navigation.dispatch(
+                    CommonActions.reset({
+                      index: 0,
+                      routes: [{ name: 'Home' }],
+                    })
+                  );
+                }}
+              >
+                <Text style={[styles.modalBtnText, { color: '#001f3f' }]}>Save</Text>
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
@@ -516,15 +575,18 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
   },
   modalContent: {
     backgroundColor: '#001a35',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderRadius: 24,
     padding: 24,
-    maxHeight: '80%',
+    width: '100%',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.2)',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -534,8 +596,50 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     color: '#fff',
-    fontSize: 20,
+    fontSize: 22,
     fontFamily: 'Poppins-SemiBold',
+    marginBottom: 8,
+  },
+  modalSubtitle: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 14,
+    fontFamily: 'Poppins-Regular',
+    marginBottom: 24,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  input: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 12,
+    padding: 16,
+    color: '#fff',
+    fontFamily: 'Poppins-Regular',
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    marginBottom: 24,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCancelBtn: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  modalSaveBtn: {
+    backgroundColor: '#FFD700',
+  },
+  modalBtnText: {
+    color: '#fff',
+    fontFamily: 'Poppins-SemiBold',
+    fontSize: 14,
   },
   itemOption: {
     flexDirection: 'row',

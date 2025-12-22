@@ -70,7 +70,7 @@ export default function HomeScreen({ navigation }) {
             <View style={styles.infoLogoUnderline} />
           </View>
           
-          <Text style={styles.infoVersion}>Version 1.2 Pro</Text>
+          <Text style={styles.infoVersion}>Version 1.2</Text>
           
           <View style={styles.infoDetails}>
             <Text style={styles.infoText}>The high-end tool for treasure-hunting hustlers.</Text>

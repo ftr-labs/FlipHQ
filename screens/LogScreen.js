@@ -279,7 +279,16 @@ export default function LogScreen({ navigation, route }) {
 
         {/* Live Ticker Footer */}
         <View style={styles.footer}>
-          {liveValuation && (
+          {liveValuation && category === 'collectibles' ? (
+            <View style={styles.ticker}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.tickerLabel}>Collectibles Valuation</Text>
+                <Text style={[styles.tickerValue, { color: '#FFD700', fontSize: 14 }]}>
+                  Use specialized tools for accurate pricing
+                </Text>
+              </View>
+            </View>
+          ) : liveValuation ? (
             <View style={styles.ticker}>
               <View>
                 <Text style={styles.tickerLabel}>Est. Profit Range</Text>
@@ -296,7 +305,7 @@ export default function LogScreen({ navigation, route }) {
                 </Text>
               </View>
             </View>
-          )}
+          ) : null}
           
           <Pressable
             style={[styles.nextBtn, !canGoNext() && styles.disabledBtn]}

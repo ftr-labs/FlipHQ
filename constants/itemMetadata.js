@@ -1,10 +1,10 @@
 export const categories = [
   { label: 'Electronics', value: 'electronics', icon: 'zap' },
-  { label: 'Furniture', value: 'furniture', icon: 'home' },
   { label: 'Clothing', value: 'clothing', icon: 'shopping-bag' },
-  { label: 'Tools', value: 'tools', icon: 'tool' },
+  { label: 'Furniture', value: 'furniture', icon: 'home' },
   { label: 'Decor', value: 'decor', icon: 'sun' },
   { label: 'Collectibles', value: 'collectibles', icon: 'star' },
+  { label: 'Tools', value: 'tools', icon: 'tool' },
 ];
 export const typeOptions = [
   { label: 'Vintage', value: 'vintage' },
