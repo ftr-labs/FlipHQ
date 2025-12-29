@@ -19,9 +19,9 @@ import { scaleFont, scaleSize, getResponsiveValue } from '../utils/responsive';
 
 // Product ID mapping for iOS and Android
 const PRODUCT_IDS = {
-  starter: Platform.OS === 'ios' ? 'com.flipworthy.starter' : 'starter_pack',
-  hustler: Platform.OS === 'ios' ? 'com.flipworthy.hustler' : 'hustler_pack',
-  pro: Platform.OS === 'ios' ? 'com.flipworthy.pro' : 'pro_pack',
+  starter: Platform.OS === 'ios' ? 'com.flipworthy.starterpack' : 'starter_pack',
+  hustler: Platform.OS === 'ios' ? 'com.flipworthy.hustlerpack' : 'hustler_pack',
+  pro: Platform.OS === 'ios' ? 'com.flipworthy.propack' : 'pro_pack',
 };
 
 const BUNDLES = [
@@ -54,12 +54,13 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
   const [purchasing, setPurchasing] = useState(false);
   const [purchasingBundleId, setPurchasingBundleId] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [productsLoaded, setProductsLoaded] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       if (visible) {
         loadTokenCount();
-        connectToStore();
+        initializeStore();
       }
     }, [visible])
   );
@@ -69,21 +70,45 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
     setCurrentTokens(count);
   };
 
-  const connectToStore = async () => {
-    // Don't reconnect if already connected
-    if (isConnected) return;
-    
+  const initializeStore = async () => {
     try {
-      await InAppPurchases.connectAsync();
-      setIsConnected(true);
-    } catch (error) {
-      // Handle "already connected" error gracefully
-      if (error.message && error.message.includes('already connected')) {
-        setIsConnected(true);
-        return;
+      // Connect to store if not already connected
+      if (!isConnected) {
+        try {
+          await InAppPurchases.connectAsync();
+          setIsConnected(true);
+        } catch (error) {
+          // Handle "already connected" error gracefully
+          if (error.message && error.message.includes('already connected')) {
+            setIsConnected(true);
+          } else {
+            if (__DEV__) {
+              console.error('Failed to connect to store:', error);
+            }
+            return;
+          }
+        }
       }
+
+      // Query products from store (required before purchase)
+      if (!productsLoaded) {
+        const productIds = Object.values(PRODUCT_IDS);
+        const { responseCode, results } = await InAppPurchases.getProductsAsync(productIds);
+        
+        if (responseCode === InAppPurchases.IAPResponseCode.OK && results) {
+          setProductsLoaded(true);
+          if (__DEV__) {
+            console.log('Products loaded:', results);
+          }
+        } else {
+          if (__DEV__) {
+            console.error('Failed to load products:', responseCode);
+          }
+        }
+      }
+    } catch (error) {
       if (__DEV__) {
-        console.error('Failed to connect to store:', error);
+        console.error('Store initialization error:', error);
       }
     }
   };
@@ -95,9 +120,17 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
     setPurchasingBundleId(bundle.id);
 
     try {
-      // Ensure we're connected before purchasing
-      if (!isConnected) {
-        await connectToStore();
+      // Ensure store is initialized (connected + products queried)
+      if (!isConnected || !productsLoaded) {
+        await initializeStore();
+        
+        // Check again after initialization
+        if (!isConnected) {
+          throw new Error('Failed to connect to App Store.');
+        }
+        if (!productsLoaded) {
+          throw new Error('Failed to load products from store. Please try again.');
+        }
       }
 
       // Get the product ID for this bundle
@@ -107,7 +140,7 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
         throw new Error(`Product ID not found for bundle: ${bundle.id}`);
       }
 
-      // Purchase the product
+      // Purchase the product (products must be queried first)
       const { responseCode, results } = await InAppPurchases.purchaseItemAsync(productId);
 
       if (responseCode === InAppPurchases.IAPResponseCode.OK) {

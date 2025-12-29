@@ -2,7 +2,7 @@
   "expo": {
     "name": "FlipHQ",
     "slug": "flipworthy",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -14,6 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
+      "buildNumber": "3",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "FlipHQ needs your location to show you nearby garage sales and thrift spots.",
         "ITSAppUsesNonExemptEncryption": false
