@@ -55,6 +55,8 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
   const [purchasingBundleId, setPurchasingBundleId] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [productsLoaded, setProductsLoaded] = useState(false);
+  const [products, setProducts] = useState([]); // Store actual Product objects from StoreKit
+  const [loadingProducts, setLoadingProducts] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -71,6 +73,12 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
   };
 
   const initializeStore = async () => {
+    // Don't re-fetch if already loaded
+    if (productsLoaded && products.length > 0) {
+      return products;
+    }
+    
+    setLoadingProducts(true);
     try {
       // Connect to store if not already connected
       if (!isConnected) {
@@ -85,31 +93,53 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
             if (__DEV__) {
               console.error('Failed to connect to store:', error);
             }
-            return;
+            setLoadingProducts(false);
+            return [];
           }
         }
       }
 
       // Query products from store (required before purchase)
-      if (!productsLoaded) {
-        const productIds = Object.values(PRODUCT_IDS);
-        const { responseCode, results } = await InAppPurchases.getProductsAsync(productIds);
-        
-        if (responseCode === InAppPurchases.IAPResponseCode.OK && results) {
-          setProductsLoaded(true);
-          if (__DEV__) {
-            console.log('Products loaded:', results);
-          }
-        } else {
-          if (__DEV__) {
-            console.error('Failed to load products:', responseCode);
-          }
+      const productIds = Object.values(PRODUCT_IDS);
+      const productsResponse = await InAppPurchases.getProductsAsync(productIds);
+      
+      // Check if response exists
+      if (!productsResponse) {
+        if (__DEV__) {
+          console.error('getProductsAsync returned no response');
         }
+        setProductsLoaded(false);
+        setProducts([]);
+        return [];
+      }
+
+      const { responseCode, results } = productsResponse;
+      
+      if (responseCode === InAppPurchases.IAPResponseCode.OK && results && results.length > 0) {
+        // Store the actual Product objects returned from StoreKit
+        setProducts(results);
+        setProductsLoaded(true);
+        if (__DEV__) {
+          console.log('Products loaded:', results);
+        }
+        return results;
+      } else {
+        if (__DEV__) {
+          console.error('Failed to load products:', responseCode, results);
+        }
+        setProductsLoaded(false);
+        setProducts([]);
+        return [];
       }
     } catch (error) {
       if (__DEV__) {
         console.error('Store initialization error:', error);
       }
+      setProductsLoaded(false);
+      setProducts([]);
+      return [];
+    } finally {
+      setLoadingProducts(false);
     }
   };
 
@@ -121,14 +151,16 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
 
     try {
       // Ensure store is initialized (connected + products queried)
-      if (!isConnected || !productsLoaded) {
-        await initializeStore();
+      // Get products directly from initializeStore to avoid state timing issues
+      let availableProducts = products;
+      if (!isConnected || !productsLoaded || products.length === 0) {
+        availableProducts = await initializeStore();
         
         // Check again after initialization
         if (!isConnected) {
           throw new Error('Failed to connect to App Store.');
         }
-        if (!productsLoaded) {
+        if (!availableProducts || availableProducts.length === 0) {
           throw new Error('Failed to load products from store. Please try again.');
         }
       }
@@ -140,14 +172,37 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
         throw new Error(`Product ID not found for bundle: ${bundle.id}`);
       }
 
-      // Purchase the product (products must be queried first)
-      const { responseCode, results } = await InAppPurchases.purchaseItemAsync(productId);
+      // CRITICAL: Find the actual Product object returned by StoreKit
+      // We can only purchase products that were successfully returned from getProductsAsync()
+      const product = availableProducts.find(p => p.productId === productId);
+
+      if (!product) {
+        throw new Error(`Product "${productId}" not found in store. It may not be available or configured correctly.`);
+      }
+
+      // Purchase using the actual Product object (or productId from verified product)
+      const purchaseResponse = await InAppPurchases.purchaseItemAsync(product.productId);
+
+      // CRITICAL: Check if response exists before destructuring
+      if (!purchaseResponse) {
+        throw new Error('Purchase request returned no response. Please try again.');
+      }
+
+      const { responseCode, results } = purchaseResponse;
 
       if (responseCode === InAppPurchases.IAPResponseCode.OK) {
-        // Purchase successful
+        // Purchase successful - validate results array
+        if (!results || results.length === 0) {
+          throw new Error('Purchase completed but no purchase data received. Please contact support if tokens were not added.');
+        }
+
         const purchase = results[0];
         
-        if (purchase) {
+        if (!purchase) {
+          throw new Error('Purchase data is invalid. Please contact support if tokens were not added.');
+        }
+
+        try {
           // Add tokens to user's account
           await addTokens(bundle.tokens);
           await loadTokenCount();
@@ -155,11 +210,18 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
           if (onTokensAdded) onTokensAdded();
 
           // Acknowledge the purchase (required for consumables)
+          // Always finish transaction even if token addition fails
           if (purchase.acknowledged === false) {
             await InAppPurchases.finishTransactionAsync(purchase, true);
           }
 
           Alert.alert('Success!', `You've received ${bundle.tokens} tokens!`);
+        } catch (tokenError) {
+          // If token addition fails, still acknowledge purchase to prevent duplicate charges
+          if (purchase.acknowledged === false) {
+            await InAppPurchases.finishTransactionAsync(purchase, true);
+          }
+          throw new Error('Purchase completed but failed to add tokens. Please contact support.');
         }
       } else if (responseCode === InAppPurchases.IAPResponseCode.USER_CANCELED) {
         // User canceled - no action needed
@@ -223,10 +285,19 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
             </View>
 
             <Text style={styles.sectionTitle}>Choose a Bundle</Text>
+            {loadingProducts && (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color="#FFD700" />
+                <Text style={styles.loadingText}>Loading products...</Text>
+              </View>
+            )}
             <View style={styles.bundlesContainer}>
               {BUNDLES.map((bundle) => {
                 const isPurchasing = purchasing && purchasingBundleId === bundle.id;
-                const isDisabled = purchasing && purchasingBundleId !== bundle.id;
+                const productId = PRODUCT_IDS[bundle.id];
+                const productAvailable = products.some(p => p.productId === productId);
+                // Disable if: purchasing another item, products not loaded, or this product not available
+                const isDisabled = purchasing || !productsLoaded || !productAvailable || loadingProducts;
                 
                 return (
                   <Pressable
@@ -406,6 +477,19 @@ const styles = StyleSheet.create({
     color: '#FFD700',
     fontSize: scaleFont(12),
     fontFamily: 'Poppins-SemiBold',
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: scaleSize(8),
+    padding: scaleSize(16),
+    marginBottom: scaleSize(16),
+  },
+  loadingText: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: scaleFont(14),
+    fontFamily: 'Poppins-Regular',
   },
 });
 

@@ -2,7 +2,7 @@
   "expo": {
     "name": "FlipHQ",
     "slug": "flipworthy",
-    "version": "1.0.2",
+    "version": "1.0.5",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -10,11 +10,11 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#001a35"
     },
     "ios": {
       "supportsTablet": true,
-      "buildNumber": "3",
+      "buildNumber": "6",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "FlipHQ needs your location to show you nearby garage sales and thrift spots.",
         "ITSAppUsesNonExemptEncryption": false

@@ -99,7 +99,9 @@ export default function EstimateScreen() {
         await Linking.openURL(url);
       }
     } catch (error) {
-      console.error('Error opening URL:', error);
+      if (__DEV__) {
+        console.error('Error opening URL:', error);
+      }
     }
   };
 
