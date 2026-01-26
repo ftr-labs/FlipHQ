@@ -1,8 +1,10 @@
 // studioFTR
 import { OPEN_AI_API } from '@env';
+import { openAIRateLimiter } from './rateLimiter';
 
 const API_URL = 'https://api.openai.com/v1/chat/completions';
 const MODEL = 'gpt-4o-mini';
+const API_TIMEOUT_MS = 30000; // 30 seconds
 
 const SYSTEM_PROMPT = `You're FlipBot, the AI sidekick for FlipHQ—the app for treasure-hunting hustlers who actually make money flipping.
 
@@ -49,14 +51,32 @@ export const sendMessageToFlipBot = async (userMessage, conversationHistory = []
     throw new Error('OpenAI API key not configured. Please check your .env file.');
   }
 
+  // Rate limiting: wait if necessary
+  if (!openAIRateLimiter.canMakeRequest()) {
+    const waitTime = openAIRateLimiter.getTimeUntilNextRequest();
+    if (waitTime > 0) {
+      throw new Error(`Please wait ${Math.ceil(waitTime / 1000)} seconds before making another request.`);
+    }
+  }
+
   try {
+    // Record the request
+    openAIRateLimiter.recordRequest();
     const messages = [
       { role: 'system', content: SYSTEM_PROMPT },
       ...conversationHistory,
       { role: 'user', content: userMessage },
     ];
 
-    const response = await fetch(API_URL, {
+    // Create timeout promise
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('Request timeout - the AI is taking too long to respond'));
+      }, API_TIMEOUT_MS);
+    });
+
+    // Create fetch promise
+    const fetchPromise = fetch(API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -69,6 +89,9 @@ export const sendMessageToFlipBot = async (userMessage, conversationHistory = []
         max_tokens: 500, // Keep responses concise for mobile
       }),
     });
+
+    // Race between fetch and timeout
+    const response = await Promise.race([fetchPromise, timeoutPromise]);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -91,6 +114,8 @@ export const sendMessageToFlipBot = async (userMessage, conversationHistory = []
     // User-friendly error messages
     if (error.message.includes('API key')) {
       throw new Error('API configuration error. Please contact support.');
+    } else if (error.message.includes('timeout')) {
+      throw new Error('Request timed out. Please check your connection and try again.');
     } else if (error.message.includes('network') || error.message.includes('fetch')) {
       throw new Error('Network error. Check your connection and try again.');
     } else {

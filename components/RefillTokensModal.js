@@ -1,5 +1,5 @@
 // FTR
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,8 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import * as InAppPurchases from 'expo-in-app-purchases';
-import { getTokens, addTokens } from '../utils/tokenManager';
+import { getTokens } from '../utils/tokenManager';
+import { iapEmitter } from '../utils/iapEvents';
 import { scaleFont, scaleSize, getResponsiveValue } from '../utils/responsive';
 
 // Product ID mapping for iOS and Android
@@ -53,7 +54,6 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
   const [currentTokens, setCurrentTokens] = useState(0);
   const [purchasing, setPurchasing] = useState(false);
   const [purchasingBundleId, setPurchasingBundleId] = useState(null);
-  const [isConnected, setIsConnected] = useState(false);
   const [productsLoaded, setProductsLoaded] = useState(false);
   const [products, setProducts] = useState([]); // Store actual Product objects from StoreKit
   const [loadingProducts, setLoadingProducts] = useState(false);
@@ -66,6 +66,30 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
       }
     }, [visible])
   );
+
+  // Listen for purchase success and deferred events from global listener
+  useEffect(() => {
+    const successSubscription = iapEmitter.addListener('purchaseSuccess', ({ tokensAdded }) => {
+      // Reload token count to reflect the granted tokens
+      loadTokenCount();
+      
+      // Show success message
+      Alert.alert('Success!', `You've received ${tokensAdded} tokens!`);
+      
+      // Notify parent component
+      if (onTokensAdded) onTokensAdded();
+    });
+
+    const deferredSubscription = iapEmitter.addListener('purchaseDeferred', ({ message }) => {
+      // Show deferred message
+      Alert.alert('Purchase Pending', message || 'Your purchase is pending approval. You will receive tokens once approved.');
+    });
+
+    return () => {
+      successSubscription.remove();
+      deferredSubscription.remove();
+    };
+  }, [onTokensAdded]);
 
   const loadTokenCount = async () => {
     const count = await getTokens();
@@ -80,24 +104,8 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
     
     setLoadingProducts(true);
     try {
-      // Connect to store if not already connected
-      if (!isConnected) {
-        try {
-          await InAppPurchases.connectAsync();
-          setIsConnected(true);
-        } catch (error) {
-          // Handle "already connected" error gracefully
-          if (error.message && error.message.includes('already connected')) {
-            setIsConnected(true);
-          } else {
-            if (__DEV__) {
-              console.error('Failed to connect to store:', error);
-            }
-            setLoadingProducts(false);
-            return [];
-          }
-        }
-      }
+      // Store connection is handled globally in App.js
+      // We can query products directly - if not connected, getProductsAsync will fail
 
       // Query products from store (required before purchase)
       const productIds = Object.values(PRODUCT_IDS);
@@ -150,16 +158,13 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
     setPurchasingBundleId(bundle.id);
 
     try {
-      // Ensure store is initialized (connected + products queried)
+      // Ensure products are loaded before purchase
       // Get products directly from initializeStore to avoid state timing issues
       let availableProducts = products;
-      if (!isConnected || !productsLoaded || products.length === 0) {
+      if (!productsLoaded || products.length === 0) {
         availableProducts = await initializeStore();
         
-        // Check again after initialization
-        if (!isConnected) {
-          throw new Error('Failed to connect to App Store.');
-        }
+        // Check if products loaded successfully
         if (!availableProducts || availableProducts.length === 0) {
           throw new Error('Failed to load products from store. Please try again.');
         }
@@ -181,60 +186,17 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
       }
 
       // Purchase using the actual Product object (or productId from verified product)
-      const purchaseResponse = await InAppPurchases.purchaseItemAsync(product.productId);
-
-      // CRITICAL: Check if response exists before destructuring
-      if (!purchaseResponse) {
-        throw new Error('Purchase request returned no response. Please try again.');
-      }
-
-      const { responseCode, results } = purchaseResponse;
-
-      if (responseCode === InAppPurchases.IAPResponseCode.OK) {
-        // Purchase successful - validate results array
-        if (!results || results.length === 0) {
-          throw new Error('Purchase completed but no purchase data received. Please contact support if tokens were not added.');
-        }
-
-        const purchase = results[0];
-        
-        if (!purchase) {
-          throw new Error('Purchase data is invalid. Please contact support if tokens were not added.');
-        }
-
-        try {
-          // Add tokens to user's account
-          await addTokens(bundle.tokens);
-          await loadTokenCount();
-          
-          if (onTokensAdded) onTokensAdded();
-
-          // Acknowledge the purchase (required for consumables)
-          // Always finish transaction even if token addition fails
-          if (purchase.acknowledged === false) {
-            await InAppPurchases.finishTransactionAsync(purchase, true);
-          }
-
-          Alert.alert('Success!', `You've received ${bundle.tokens} tokens!`);
-        } catch (tokenError) {
-          // If token addition fails, still acknowledge purchase to prevent duplicate charges
-          if (purchase.acknowledged === false) {
-            await InAppPurchases.finishTransactionAsync(purchase, true);
-          }
-          throw new Error('Purchase completed but failed to add tokens. Please contact support.');
-        }
-      } else if (responseCode === InAppPurchases.IAPResponseCode.USER_CANCELED) {
-        // User canceled - no action needed
-        if (__DEV__) {
-          console.log('Purchase canceled by user');
-        }
-      } else if (responseCode === InAppPurchases.IAPResponseCode.DEFERRED) {
-        // Purchase deferred (iOS only - family sharing)
-        Alert.alert('Purchase Pending', 'Your purchase is pending approval.');
-      } else {
-        // Other error
-        throw new Error(`Purchase failed with code: ${responseCode}`);
-      }
+      // NOTE: purchaseItemAsync returns Promise<void> - purchase results are delivered
+      // asynchronously via the global purchase listener in App.js, NOT as a return value
+      await InAppPurchases.purchaseItemAsync(product.productId);
+      
+      // Purchase has been triggered - the global listener in App.js will handle:
+      // - Granting tokens based on product ID
+      // - Finishing the transaction
+      // - Emitting 'purchaseSuccess' event for UI updates
+      // - All purchase result codes (OK, USER_CANCELED, DEFERRED, ERROR)
+      
+      // No success handling here - all handled by listener via event emitter
     } catch (error) {
       if (__DEV__) {
         console.error('Purchase error:', error);

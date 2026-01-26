@@ -23,6 +23,7 @@ import {
   getSearchCache 
 } from '../utils/logManager';
 import { getTokens, deductToken, refundToken, initializeTokens } from '../utils/tokenManager';
+import { placesRateLimiter } from '../utils/rateLimiter';
 import { scaleFont, scaleSize } from '../utils/responsive';
 
 export default function FindScreen({ navigation }) {
@@ -157,7 +158,27 @@ export default function FindScreen({ navigation }) {
         console.log('Request URL:', url);
       }
 
-      const resp = await fetch(url);
+      // Rate limiting: wait if necessary
+      if (!placesRateLimiter.canMakeRequest()) {
+        const waitTime = placesRateLimiter.getTimeUntilNextRequest();
+        if (waitTime > 0) {
+          throw new Error(`Please wait ${Math.ceil(waitTime / 1000)} seconds before scanning again.`);
+        }
+      }
+
+      // Record the request
+      placesRateLimiter.recordRequest();
+
+      // Add timeout to prevent hanging requests
+      const PLACES_API_TIMEOUT_MS = 30000; // 30 seconds
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Request timeout - please check your connection'));
+        }, PLACES_API_TIMEOUT_MS);
+      });
+
+      const fetchPromise = fetch(url);
+      const resp = await Promise.race([fetchPromise, timeoutPromise]);
       const data = await resp.json();
 
       if (data.status !== 'OK') {
@@ -227,7 +248,14 @@ export default function FindScreen({ navigation }) {
         await refundToken();
         await loadTokenCount();
       }
-      setMessage('Failed to fetch spots.');
+      // Provide user-friendly error message
+      let errorMessage = 'Failed to fetch spots.';
+      if (e.message && e.message.includes('timeout')) {
+        errorMessage = 'Request timed out. Please check your connection and try again.';
+      } else if (e.message && (e.message.includes('network') || e.message.includes('fetch'))) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      }
+      setMessage(errorMessage);
     } finally {
       setLoading(false);
     }
