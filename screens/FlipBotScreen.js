@@ -16,7 +16,14 @@ import { StatusBar } from 'expo-status-bar';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, CommonActions } from '@react-navigation/native';
 import { sendMessageToFlipBot } from '../utils/aiService';
-import { getTokens, deductToken, initializeTokens, refundToken } from '../utils/tokenManager';
+import { 
+  getTokens, 
+  initializeTokens, 
+  refundToken, 
+  incrementPromptCount, 
+  resetPromptCount,
+  getPromptCount 
+} from '../utils/tokenManager';
 import { scaleFont, scaleSize, getResponsiveValue } from '../utils/responsive';
 
 const MESSAGES_PER_TOKEN = 3; // 1 token = 3 user messages (3 exchanges)
@@ -34,15 +41,14 @@ export default function FlipBotScreen({ navigation }) {
   const [isLoading, setIsLoading] = useState(false);
   const [tokenCount, setTokenCount] = useState(0);
   const [showOutOfTokens, setShowOutOfTokens] = useState(false);
-  const [messagesInSession, setMessagesInSession] = useState(0); // Track user messages in current session
   const flatListRef = useRef(null);
   const spinAnim = useRef(new Animated.Value(0)).current;
 
   useFocusEffect(
     React.useCallback(() => {
       loadTokenCount();
-      // Reset message count when screen comes into focus (new session)
-      setMessagesInSession(0);
+      // Note: Prompt count is persisted, so we don't reset it on focus
+      // This ensures the 3-prompts-per-token ratio works across app restarts
     }, [])
   );
 
@@ -82,26 +88,18 @@ export default function FlipBotScreen({ navigation }) {
     const trimmedText = inputText.trim();
     if (!trimmedText || isLoading) return;
 
-    // Check if we need a new token for this message
-    const needsNewToken = messagesInSession % MESSAGES_PER_TOKEN === 0;
-    
-    if (needsNewToken) {
-      // Check tokens before proceeding
+    // Get current prompt count to check if we'll need a token for this prompt
+    const currentPromptCount = await getPromptCount();
+    const willNeedToken = (currentPromptCount + 1) % 3 === 0;
+
+    // If this prompt will trigger token deduction, check we have tokens
+    if (willNeedToken) {
       const currentTokens = await getTokens();
       if (currentTokens < 1) {
-        setShowOutOfTokens(true);
-        return;
-      }
-
-      // Deduct token for new session of 3 messages
-      const deducted = await deductToken();
-      if (!deducted) {
         setShowOutOfTokens(true);
         await loadTokenCount();
         return;
       }
-
-      await loadTokenCount(); // Update display
     }
 
     // Add user message
@@ -115,12 +113,20 @@ export default function FlipBotScreen({ navigation }) {
     setMessages(prev => [...prev, userMessage]);
     setInputText('');
     setIsLoading(true);
-    
-    // Increment message count
-    const newMessageCount = messagesInSession + 1;
-    setMessagesInSession(newMessageCount);
+
+    // Track if token was deducted for this prompt (for refund logic)
+    let tokenDeducted = false;
 
     try {
+      // Increment prompt count (this will deduct token if count reaches 3)
+      // This happens BEFORE the API call so we charge even if API fails
+      tokenDeducted = await incrementPromptCount();
+      
+      // Update token display if token was deducted
+      if (tokenDeducted) {
+        await loadTokenCount();
+      }
+
       // Build conversation history for context
       const conversationHistory = messages
         .filter(m => m.role !== 'system')
@@ -142,12 +148,11 @@ export default function FlipBotScreen({ navigation }) {
 
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
-      // Only refund token if this was the first message in a new session
-      if (needsNewToken) {
+      // If API call failed and we just deducted a token, refund it
+      if (tokenDeducted) {
         await refundToken();
+        await resetPromptCount(); // Reset prompt count since we refunded
         await loadTokenCount();
-        // Reset message count since we refunded
-        setMessagesInSession(prev => Math.max(0, prev - 1));
       }
 
       // Show error message

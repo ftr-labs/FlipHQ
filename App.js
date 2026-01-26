@@ -128,15 +128,24 @@ export default function App() {
                         console.error('IAP: Error finishing transaction:', finishError);
                       }
                     }
+                    // Emit error event so UI can reset state
+                    iapEmitter.emit('purchaseError', {
+                      productId: purchase.productId,
+                      error: error.message || 'Failed to process purchase',
+                      type: 'processing_error'
+                    });
                   }
                 }
               });
             }
           } else if (responseCode === InAppPurchases.IAPResponseCode.USER_CANCELED) {
-            // User canceled - no action needed
+            // User canceled - emit event so UI can reset state
             if (__DEV__) {
               console.log('IAP: User canceled purchase');
             }
+            iapEmitter.emit('purchaseCanceled', {
+              message: 'Purchase was canceled'
+            });
           } else if (responseCode === InAppPurchases.IAPResponseCode.DEFERRED) {
             // Purchase deferred (iOS only - family sharing)
             if (__DEV__) {
@@ -147,10 +156,15 @@ export default function App() {
               message: 'Your purchase is pending approval. You will receive tokens once approved.'
             });
           } else {
-            // Other error
+            // Other error - emit event so UI can reset state
             if (__DEV__) {
               console.error('IAP: Purchase error:', errorCode);
             }
+            iapEmitter.emit('purchaseError', {
+              error: `Purchase failed with code: ${errorCode}`,
+              errorCode: errorCode,
+              type: 'storekit_error'
+            });
           }
         });
 

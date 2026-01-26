@@ -1,5 +1,5 @@
 // FTR
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -57,6 +57,7 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
   const [productsLoaded, setProductsLoaded] = useState(false);
   const [products, setProducts] = useState([]); // Store actual Product objects from StoreKit
   const [loadingProducts, setLoadingProducts] = useState(false);
+  const purchaseTimeoutRef = useRef(null); // Store timeout ID for safety timeout
 
   useFocusEffect(
     useCallback(() => {
@@ -67,9 +68,23 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
     }, [visible])
   );
 
-  // Listen for purchase success and deferred events from global listener
+  // Listen for ALL purchase events from global listener
+  // CRITICAL: State reset must happen in event handlers, not in handlePurchase
   useEffect(() => {
-    const successSubscription = iapEmitter.addListener('purchaseSuccess', ({ tokensAdded }) => {
+    const resetPurchasingState = () => {
+      setPurchasing(false);
+      setPurchasingBundleId(null);
+      // Clear safety timeout if it exists
+      if (purchaseTimeoutRef.current) {
+        clearTimeout(purchaseTimeoutRef.current);
+        purchaseTimeoutRef.current = null;
+      }
+    };
+
+    const successSubscription = iapEmitter.addListener('purchaseSuccess', ({ tokensAdded, productId }) => {
+      // CRITICAL: Reset purchasing state FIRST
+      resetPurchasingState();
+      
       // Reload token count to reflect the granted tokens
       loadTokenCount();
       
@@ -81,13 +96,41 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
     });
 
     const deferredSubscription = iapEmitter.addListener('purchaseDeferred', ({ message }) => {
+      // CRITICAL: Reset purchasing state
+      resetPurchasingState();
+      
       // Show deferred message
       Alert.alert('Purchase Pending', message || 'Your purchase is pending approval. You will receive tokens once approved.');
+    });
+
+    const errorSubscription = iapEmitter.addListener('purchaseError', ({ error, type, productId }) => {
+      // CRITICAL: Reset purchasing state
+      resetPurchasingState();
+      
+      // Show error message (if not already shown by handlePurchase catch)
+      // Only show if it's a StoreKit error, not a processing error (those are handled in listener)
+      if (type === 'storekit_error') {
+        Alert.alert(
+          'Purchase Failed',
+          error || 'Unable to complete purchase. Please try again.',
+          [{ text: 'OK' }]
+        );
+      }
+    });
+
+    const canceledSubscription = iapEmitter.addListener('purchaseCanceled', ({ message }) => {
+      // CRITICAL: Reset purchasing state
+      resetPurchasingState();
+      
+      // User canceled - no need to show alert, just reset state
+      // The purchase sheet already showed cancel confirmation
     });
 
     return () => {
       successSubscription.remove();
       deferredSubscription.remove();
+      errorSubscription.remove();
+      canceledSubscription.remove();
     };
   }, [onTokensAdded]);
 
@@ -157,6 +200,22 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
     setPurchasing(true);
     setPurchasingBundleId(bundle.id);
 
+    // Safety timeout: If no event is received within 60 seconds, reset state
+    // This prevents permanent UI lock if listener fails to emit events
+    purchaseTimeoutRef.current = setTimeout(() => {
+      if (__DEV__) {
+        console.warn('IAP: Purchase timeout - no event received, resetting state');
+      }
+      setPurchasing(false);
+      setPurchasingBundleId(null);
+      purchaseTimeoutRef.current = null;
+      Alert.alert(
+        'Purchase Timeout',
+        'The purchase is taking longer than expected. Please check your purchase history or try again.',
+        [{ text: 'OK' }]
+      );
+    }, 60000); // 60 seconds
+
     try {
       // Ensure products are loaded before purchase
       // Get products directly from initializeStore to avoid state timing issues
@@ -196,11 +255,31 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
       // - Emitting 'purchaseSuccess' event for UI updates
       // - All purchase result codes (OK, USER_CANCELED, DEFERRED, ERROR)
       
-      // No success handling here - all handled by listener via event emitter
+      // Purchase has been triggered - the global listener in App.js will handle:
+      // - Granting tokens based on product ID
+      // - Finishing the transaction
+      // - Emitting events for UI updates (success, error, cancel, deferred)
+      // - All purchase result codes (OK, USER_CANCELED, DEFERRED, ERROR)
+      
+      // CRITICAL: Do NOT reset purchasing state here - it will be reset by event handlers
+      // The listener will emit an event for any outcome (success, error, cancel)
+      // We only reset here if purchaseItemAsync itself throws (before StoreKit is involved)
     } catch (error) {
       if (__DEV__) {
-        console.error('Purchase error:', error);
+        console.error('Purchase error (before StoreKit):', error);
       }
+      
+      // This error is from purchaseItemAsync failing BEFORE StoreKit processes
+      // (e.g., network error, not connected, invalid product)
+      // Reset state immediately since no StoreKit event will fire
+      // Also clear timeout since we're handling error here
+      if (purchaseTimeoutRef.current) {
+        clearTimeout(purchaseTimeoutRef.current);
+        purchaseTimeoutRef.current = null;
+      }
+      setPurchasing(false);
+      setPurchasingBundleId(null);
+      
       // Provide user-friendly error messages
       let errorMessage = 'Unable to complete purchase. Please try again.';
       if (error.message) {
@@ -215,10 +294,8 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
         errorMessage,
         [{ text: 'OK' }]
       );
-    } finally {
-      setPurchasing(false);
-      setPurchasingBundleId(null);
     }
+    // NOTE: No finally block - state reset happens in event handlers or catch block
   };
 
   return (

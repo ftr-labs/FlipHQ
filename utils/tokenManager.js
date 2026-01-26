@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const STORAGE_KEY = 'userTokens';
+const PROMPT_COUNT_KEY = 'flipbotPromptCount';
 const INITIAL_TOKENS = 10; // Free tokens on first launch
 
 /**
@@ -112,6 +113,73 @@ export const setTokens = async (amount) => {
       console.error('Failed to set tokens:', e);
     }
     return 0;
+  }
+};
+
+/**
+ * Get current prompt count for FlipBot (persisted across app restarts)
+ * @returns {Promise<number>} - Current prompt count (0-2, resets to 0 after 3)
+ */
+export const getPromptCount = async () => {
+  try {
+    const count = await AsyncStorage.getItem(PROMPT_COUNT_KEY);
+    if (count === null) {
+      return 0; // First time, no prompts yet
+    }
+    return parseInt(count, 10) || 0;
+  } catch (e) {
+    if (__DEV__) {
+      console.error('Failed to get prompt count:', e);
+    }
+    return 0;
+  }
+};
+
+/**
+ * Increment prompt count and check if token should be deducted
+ * Returns true if token was deducted, false otherwise
+ * @returns {Promise<boolean>} - True if token was deducted (prompt count reached 3)
+ */
+export const incrementPromptCount = async () => {
+  try {
+    const currentCount = await getPromptCount();
+    const newCount = currentCount + 1;
+    
+    // Store new count
+    await AsyncStorage.setItem(PROMPT_COUNT_KEY, newCount.toString());
+    
+    // Check if we've reached 3 prompts (3rd, 6th, 9th, etc.)
+    if (newCount % 3 === 0) {
+      // Deduct token and reset count
+      const deducted = await deductToken();
+      if (deducted) {
+        await AsyncStorage.setItem(PROMPT_COUNT_KEY, '0');
+        return true; // Token was deducted
+      } else {
+        // Not enough tokens - don't reset count, let user know
+        return false;
+      }
+    }
+    
+    return false; // No token deducted yet
+  } catch (e) {
+    if (__DEV__) {
+      console.error('Failed to increment prompt count:', e);
+    }
+    return false;
+  }
+};
+
+/**
+ * Reset prompt count to 0 (used when refunding token)
+ */
+export const resetPromptCount = async () => {
+  try {
+    await AsyncStorage.setItem(PROMPT_COUNT_KEY, '0');
+  } catch (e) {
+    if (__DEV__) {
+      console.error('Failed to reset prompt count:', e);
+    }
   }
 };
 
