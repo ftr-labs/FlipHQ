@@ -145,27 +145,38 @@ export const incrementPromptCount = async () => {
     const currentCount = await getPromptCount();
     const newCount = currentCount + 1;
     
-    // Store new count
-    await AsyncStorage.setItem(PROMPT_COUNT_KEY, newCount.toString());
-    
     // Check if we've reached 3 prompts (3rd, 6th, 9th, etc.)
     if (newCount % 3 === 0) {
-      // Deduct token and reset count
+      // CRITICAL: Check tokens BEFORE incrementing count
+      // This prevents incrementing count if we can't deduct token
+      const currentTokens = await getTokens();
+      if (currentTokens < 1) {
+        // Don't increment count if no tokens available
+        // Return false to indicate no token was deducted
+        return false;
+      }
+      
+      // Deduct token first
       const deducted = await deductToken();
       if (deducted) {
+        // Only increment count if token was successfully deducted
         await AsyncStorage.setItem(PROMPT_COUNT_KEY, '0');
         return true; // Token was deducted
       } else {
-        // Not enough tokens - don't reset count, let user know
+        // Token deduction failed - don't increment count
+        // Keep count at current value
         return false;
       }
     }
     
+    // Not a token-deducting prompt, safe to increment
+    await AsyncStorage.setItem(PROMPT_COUNT_KEY, newCount.toString());
     return false; // No token deducted yet
   } catch (e) {
     if (__DEV__) {
       console.error('Failed to increment prompt count:', e);
     }
+    // On error, don't increment count to prevent inconsistent state
     return false;
   }
 };

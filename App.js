@@ -46,15 +46,16 @@ export default function App() {
         }
 
         // Set global purchase listener - MUST be set before any purchases
-        InAppPurchases.setPurchaseListener(({ responseCode, results, errorCode }) => {
+        InAppPurchases.setPurchaseListener(async ({ responseCode, results, errorCode }) => {
           if (__DEV__) {
             console.log('IAP Purchase Listener:', { responseCode, results, errorCode });
           }
 
           if (responseCode === InAppPurchases.IAPResponseCode.OK) {
             // Purchase successful - process each purchase
+            // CRITICAL: Use for...of instead of forEach to properly handle async operations
             if (results && results.length > 0) {
-              results.forEach(async (purchase) => {
+              for (const purchase of results) {
                 // Only process unacknowledged purchases
                 if (!purchase.acknowledged) {
                   try {
@@ -69,7 +70,13 @@ export default function App() {
                         }
                         // Still finish the transaction to acknowledge it
                         await InAppPurchases.finishTransactionAsync(purchase, true);
-                        return; // Skip token grant but finish transaction
+                        // Emit success event so UI can reset (tokens already granted previously)
+                        iapEmitter.emit('purchaseSuccess', {
+                          productId: purchase.productId,
+                          tokensAdded: 0, // Already granted, no new tokens
+                          alreadyProcessed: true
+                        });
+                        continue; // Skip token grant but finish transaction and reset UI
                       }
                     }
 
@@ -136,7 +143,7 @@ export default function App() {
                     });
                   }
                 }
-              });
+              }
             }
           } else if (responseCode === InAppPurchases.IAPResponseCode.USER_CANCELED) {
             // User canceled - emit event so UI can reset state
