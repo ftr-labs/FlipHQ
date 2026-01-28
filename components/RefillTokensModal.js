@@ -55,92 +55,60 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
   const [purchasing, setPurchasing] = useState(false);
   const [purchasingBundleId, setPurchasingBundleId] = useState(null);
   const [productsLoaded, setProductsLoaded] = useState(false);
-  const [products, setProducts] = useState([]); // Store actual Product objects from StoreKit
+  const [products, setProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
-  const purchaseTimeoutRef = useRef(null); // Store timeout ID for safety timeout
+  const safetyTimeoutRef = useRef(null);
 
   useFocusEffect(
     useCallback(() => {
       if (visible) {
-        // Always refresh token count when modal opens (works even if purchase happened while closed)
         loadTokenCount();
         initializeStore();
-      } else {
-        // When modal closes, ensure purchasing state is reset (defensive cleanup)
-        if (purchasing) {
-          resetPurchasingState();
-        }
       }
-    }, [visible, purchasing])
+    }, [visible])
   );
 
-  // Listen for ALL purchase events from global listener
-  // NOTE: Events are for showing messages and refreshing tokens
-  // UI state reset happens deterministically via failsafe timer OR events (whichever comes first)
+  // Listen to purchase events - UI state reset ONLY via events
   useEffect(() => {
-    const handleEventStateReset = () => {
-      // Clear failsafe timer since event fired
-      if (purchaseTimeoutRef.current) {
-        clearTimeout(purchaseTimeoutRef.current);
-        purchaseTimeoutRef.current = null;
+    const clearSafetyTimeout = () => {
+      if (safetyTimeoutRef.current) {
+        clearTimeout(safetyTimeoutRef.current);
+        safetyTimeoutRef.current = null;
       }
-      // Reset UI state
+    };
+
+    const resetPurchasingState = () => {
+      clearSafetyTimeout();
       setPurchasing(false);
       setPurchasingBundleId(null);
     };
 
-    const successSubscription = iapEmitter.addListener('purchaseSuccess', ({ tokensAdded, productId, alreadyProcessed }) => {
-      // Reset UI state (clears failsafe timer)
-      handleEventStateReset();
-      
-      // Reload token count to reflect the granted tokens
-      // This works even if modal unmounts - token count is in AsyncStorage
+    const successSubscription = iapEmitter.addListener('purchaseSuccess', ({ tokensAdded, alreadyProcessed }) => {
+      resetPurchasingState();
       loadTokenCount();
       
-      // Show success message (only if tokens were actually added, not if already processed)
       if (!alreadyProcessed && tokensAdded > 0) {
         Alert.alert('Success!', `You've received ${tokensAdded} tokens!`);
-      } else if (alreadyProcessed) {
-        // Transaction was already processed (e.g., on app restart)
-        // Just refresh token count silently
-        if (__DEV__) {
-          console.log('IAP: Purchase already processed, tokens already granted');
-        }
       }
       
-      // Notify parent component
       if (onTokensAdded) onTokensAdded();
     });
 
     const deferredSubscription = iapEmitter.addListener('purchaseDeferred', ({ message }) => {
-      // Reset UI state
-      handleEventStateReset();
-      
-      // Show deferred message
+      resetPurchasingState();
       Alert.alert('Purchase Pending', message || 'Your purchase is pending approval. You will receive tokens once approved.');
     });
 
-    const errorSubscription = iapEmitter.addListener('purchaseError', ({ error, type, productId }) => {
-      // Reset UI state
-      handleEventStateReset();
+    const errorSubscription = iapEmitter.addListener('purchaseError', ({ error, type }) => {
+      resetPurchasingState();
       
-      // Show error message (if not already shown by handlePurchase catch)
-      // Only show if it's a StoreKit error, not a processing error (those are handled in listener)
       if (type === 'storekit_error') {
-        Alert.alert(
-          'Purchase Failed',
-          error || 'Unable to complete purchase. Please try again.',
-          [{ text: 'OK' }]
-        );
+        Alert.alert('Purchase Failed', error || 'Unable to complete purchase. Please try again.');
       }
     });
 
-    const canceledSubscription = iapEmitter.addListener('purchaseCanceled', ({ message }) => {
-      // Reset UI state
-      handleEventStateReset();
-      
-      // User canceled - no need to show alert, just reset state
-      // The purchase sheet already showed cancel confirmation
+    const canceledSubscription = iapEmitter.addListener('purchaseCanceled', () => {
+      resetPurchasingState();
     });
 
     return () => {
@@ -148,11 +116,7 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
       deferredSubscription.remove();
       errorSubscription.remove();
       canceledSubscription.remove();
-      // Cleanup: Clear any active timeout on unmount
-      if (purchaseTimeoutRef.current) {
-        clearTimeout(purchaseTimeoutRef.current);
-        purchaseTimeoutRef.current = null;
-      }
+      clearSafetyTimeout();
     };
   }, [onTokensAdded]);
 
@@ -162,25 +126,16 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
   };
 
   const initializeStore = async () => {
-    // Don't re-fetch if already loaded
     if (productsLoaded && products.length > 0) {
       return products;
     }
     
     setLoadingProducts(true);
     try {
-      // Store connection is handled globally in App.js
-      // We can query products directly - if not connected, getProductsAsync will fail
-
-      // Query products from store (required before purchase)
       const productIds = Object.values(PRODUCT_IDS);
       const productsResponse = await InAppPurchases.getProductsAsync(productIds);
       
-      // Check if response exists
       if (!productsResponse) {
-        if (__DEV__) {
-          console.error('getProductsAsync returned no response');
-        }
         setProductsLoaded(false);
         setProducts([]);
         return [];
@@ -189,17 +144,10 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
       const { responseCode, results } = productsResponse;
       
       if (responseCode === InAppPurchases.IAPResponseCode.OK && results && results.length > 0) {
-        // Store the actual Product objects returned from StoreKit
         setProducts(results);
         setProductsLoaded(true);
-        if (__DEV__) {
-          console.log('Products loaded:', results);
-        }
         return results;
       } else {
-        if (__DEV__) {
-          console.error('Failed to load products:', responseCode, results);
-        }
         setProductsLoaded(false);
         setProducts([]);
         return [];
@@ -216,107 +164,66 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
     }
   };
 
-  // Helper to reset purchasing state deterministically
-  const resetPurchasingState = () => {
-    setPurchasing(false);
-    setPurchasingBundleId(null);
-    if (purchaseTimeoutRef.current) {
-      clearTimeout(purchaseTimeoutRef.current);
-      purchaseTimeoutRef.current = null;
-    }
-  };
-
   const handlePurchase = async (bundle) => {
-    if (purchasing) return; // Prevent multiple simultaneous purchases
-
-    setPurchasing(true);
-    setPurchasingBundleId(bundle.id);
-
-    // MANDATORY: Failsafe timer - UI must unlock itself after 8-10 seconds
-    // This prevents infinite "Processing..." and is required for Apple review
-    // The UI does NOT wait for StoreKit events - it resets deterministically
-    purchaseTimeoutRef.current = setTimeout(() => {
-      if (__DEV__) {
-        console.warn('IAP: Purchase failsafe timer - resetting UI state');
-      }
-      resetPurchasingState();
-      // Show neutral message - purchase may have succeeded, tokens will appear
-      Alert.alert(
-        'Purchase Processing',
-        'Purchase completed. If tokens don\'t appear, please reopen this screen.',
-        [{ text: 'OK' }]
-      );
-    }, 10000); // 10 seconds - Apple review safe timeout
+    if (purchasing) return;
 
     try {
-      // Ensure products are loaded before purchase
-      // Get products directly from initializeStore to avoid state timing issues
+      // Load products if needed - use returned array to avoid race condition
       let availableProducts = products;
       if (!productsLoaded || products.length === 0) {
         availableProducts = await initializeStore();
         
-        // Check if products loaded successfully
         if (!availableProducts || availableProducts.length === 0) {
-          throw new Error('Failed to load products from store. Please try again.');
+          Alert.alert('Purchase Failed', 'Failed to load products from store. Please try again.');
+          return;
         }
       }
 
-      // Get the product ID for this bundle
+      // Get product ID
       const productId = PRODUCT_IDS[bundle.id];
-
       if (!productId) {
-        throw new Error(`Product ID not found for bundle: ${bundle.id}`);
+        Alert.alert('Purchase Failed', `Product ID not found for bundle: ${bundle.id}`);
+        return;
       }
 
-      // CRITICAL: Find the actual Product object returned by StoreKit
-      // We can only purchase products that were successfully returned from getProductsAsync()
+      // Find product
       const product = availableProducts.find(p => p.productId === productId);
-
       if (!product) {
-        throw new Error(`Product "${productId}" not found in store. It may not be available or configured correctly.`);
+        Alert.alert('Purchase Failed', `Product "${productId}" not found in store.`);
+        return;
       }
 
-      // Purchase using the actual Product object (or productId from verified product)
-      // NOTE: purchaseItemAsync returns Promise<void> - purchase results are delivered
-      // asynchronously via the global purchase listener in App.js, NOT as a return value
-      await InAppPurchases.purchaseItemAsync(product.productId);
+      // CRITICAL: Call purchaseItemAsync IMMEDIATELY, BEFORE UI state changes
+      try {
+        await InAppPurchases.purchaseItemAsync(product.productId);
+      } catch (initError) {
+        // Purchase failed to initiate
+        Alert.alert('Purchase Failed', 'Unable to start purchase. Please try again.');
+        return;
+      }
+
+      // THEN set processing UI state
+      setPurchasing(true);
+      setPurchasingBundleId(bundle.id);
       
-      // Purchase has been triggered - the global listener in App.js will handle:
-      // - Granting tokens based on product ID
-      // - Finishing the transaction
-      // - Emitting events for UI updates (success, error, cancel, deferred)
-      // - All purchase result codes (OK, USER_CANCELED, DEFERRED, ERROR)
+      // Safety timeout: Reset UI if StoreKit never responds (15-20s)
+      // This ONLY unlocks UI, does NOT grant tokens or show success
+      safetyTimeoutRef.current = setTimeout(() => {
+        if (__DEV__) {
+          console.warn('IAP: Safety timeout - StoreKit did not respond, resetting UI state');
+        }
+        setPurchasing(false);
+        setPurchasingBundleId(null);
+        safetyTimeoutRef.current = null;
+      }, 18000); // 18 seconds
       
-      // CRITICAL: UI state will reset via:
-      // 1. Event handlers (if listener fires quickly)
-      // 2. Failsafe timer (if listener is slow or doesn't fire)
-      // This ensures UI never locks permanently
+      // UI state will reset via purchase listener events (which clear this timeout)
     } catch (error) {
       if (__DEV__) {
-        console.error('Purchase error (before StoreKit):', error);
+        console.error('Purchase error:', error);
       }
-      
-      // This error is from purchaseItemAsync failing BEFORE StoreKit processes
-      // (e.g., network error, not connected, invalid product)
-      // Reset state immediately since no StoreKit event will fire
-      resetPurchasingState();
-      
-      // Provide user-friendly error messages
-      let errorMessage = 'Unable to complete purchase. Please try again.';
-      if (error.message) {
-        if (error.message.includes('already connected')) {
-          errorMessage = 'Please try your purchase again.';
-        } else {
-          errorMessage = error.message;
-        }
-      }
-      Alert.alert(
-        'Purchase Failed',
-        errorMessage,
-        [{ text: 'OK' }]
-      );
+      Alert.alert('Purchase Failed', 'Unable to complete purchase. Please try again.');
     }
-    // NOTE: No finally block - state reset happens in event handlers or catch block
   };
 
   return (
@@ -356,8 +263,8 @@ export default function RefillTokensModal({ visible, onClose, onTokensAdded }) {
                 const isPurchasing = purchasing && purchasingBundleId === bundle.id;
                 const productId = PRODUCT_IDS[bundle.id];
                 const productAvailable = products.some(p => p.productId === productId);
-                // Disable if: purchasing another item, products not loaded, or this product not available
-                const isDisabled = purchasing || !productsLoaded || !productAvailable || loadingProducts;
+                // Disable only if: product not available or products are currently loading
+                const isDisabled = !productAvailable || loadingProducts;
                 
                 return (
                   <Pressable
