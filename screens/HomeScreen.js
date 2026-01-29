@@ -9,14 +9,12 @@ import {
   useWindowDimensions,
   ImageBackground,
   Modal,
-  Platform,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useFocusEffect } from '@react-navigation/native';
 import { clearAllData } from '../utils/logManager';
 import { getTokens, initializeTokens } from '../utils/tokenManager';
-import RefillTokensModal from '../components/RefillTokensModal';
 import { scaleFont, scaleSize, getResponsiveValue, getScreenDimensions } from '../utils/responsive';
 
 const bubbles = [
@@ -32,7 +30,6 @@ export default function HomeScreen({ navigation }) {
   const { height, width } = useWindowDimensions();
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showRefillModal, setShowRefillModal] = useState(false);
   const [tokenCount, setTokenCount] = useState(0);
 
   useFocusEffect(
@@ -254,7 +251,7 @@ export default function HomeScreen({ navigation }) {
         </Pressable>
 
         <Pressable
-          onPress={() => setShowRefillModal(true)}
+          onPress={() => navigation.navigate('RefillTokens')}
           style={({ pressed }) => [
             styles.slimButton,
             pressed && styles.slimButtonPressed,
@@ -270,11 +267,6 @@ export default function HomeScreen({ navigation }) {
 
       {renderInfoModal()}
       {renderDeleteModal()}
-      <RefillTokensModal
-        visible={showRefillModal}
-        onClose={() => setShowRefillModal(false)}
-        onTokensAdded={loadTokenCount}
-      />
     </ImageBackground>
   );
 }

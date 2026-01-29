@@ -192,6 +192,15 @@ export default function App() {
     };
 
     setupPurchaseListener();
+
+    // Cleanup: Disconnect StoreKit when app unmounts
+    return () => {
+      InAppPurchases.disconnectAsync().catch((error) => {
+        if (__DEV__) {
+          console.error('IAP: Error disconnecting from store:', error);
+        }
+      });
+    };
   }, []);
 
   if (!fontsLoaded) {
