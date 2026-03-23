@@ -2,11 +2,10 @@
   "expo": {
     "name": "FlipHQ",
     "slug": "flipworthy",
-    "version": "1.1.2",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -14,7 +13,7 @@
     },
     "ios": {
       "supportsTablet": false,
-      "buildNumber": "12",
+      "buildNumber": "20",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "FlipHQ needs your location to show you nearby garage sales and thrift spots.",
         "ITSAppUsesNonExemptEncryption": false
@@ -26,14 +25,14 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
       "package": "com.flipworthy.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      "expo-asset"
     ],
     "extra": {
       "eas": {

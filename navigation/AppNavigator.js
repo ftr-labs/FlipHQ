@@ -11,7 +11,6 @@ import HowItWorksScreen from '../screens/HowItWorksScreen';
 import LogScreen from '../screens/LogScreen'; 
 import EstimateScreen from '../screens/EstimateScreen';
 import FlipBotScreen from '../screens/FlipBotScreen';
-import RefillTokensScreen from '../screens/RefillTokensScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -27,7 +26,6 @@ export default function AppNavigator() {
       <Stack.Screen name="HowItWorks" component={HowItWorksScreen} />
       <Stack.Screen name="Estimate" component={EstimateScreen} />
       <Stack.Screen name="FlipBot" component={FlipBotScreen} />
-      <Stack.Screen name="RefillTokens" component={RefillTokensScreen} />
     </Stack.Navigator>
   );
 }

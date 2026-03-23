@@ -1,6 +1,6 @@
 // HomeScreen.js — With Custom Modals & Functional Deletion
 // Made by JN at studioFTR
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -12,10 +12,8 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import { useFocusEffect } from '@react-navigation/native';
 import { clearAllData } from '../utils/logManager';
-import { getTokens, initializeTokens } from '../utils/tokenManager';
-import { scaleFont, scaleSize, getResponsiveValue, getScreenDimensions } from '../utils/responsive';
+import { scaleFont, scaleSize, getResponsiveValue } from '../utils/responsive';
 
 const bubbles = [
   { title: 'Find', screen: 'Find', icon: 'search' },
@@ -27,22 +25,9 @@ const bubbles = [
 ];
 
 export default function HomeScreen({ navigation }) {
-  const { height, width } = useWindowDimensions();
+  const { width } = useWindowDimensions();
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [tokenCount, setTokenCount] = useState(0);
-
-  useFocusEffect(
-    useCallback(() => {
-      loadTokenCount();
-    }, [])
-  );
-
-  const loadTokenCount = async () => {
-    await initializeTokens();
-    const count = await getTokens();
-    setTokenCount(count);
-  };
 
   const buttonWidth = (width - scaleSize(64)) / 2; // Responsive padding + gap
   const buttonHeight = scaleSize(110);
@@ -163,7 +148,7 @@ export default function HomeScreen({ navigation }) {
         </Pressable>
       </View>
 
-      {/* Main Content - Equally Spaced */}
+      {/* Main Content */}
       <View style={styles.content}>
         {/* Row 1 */}
         <View style={styles.buttonRow}>
@@ -243,25 +228,11 @@ export default function HomeScreen({ navigation }) {
         <Pressable
           onPress={() => navigation.navigate('HowItWorks')}
           style={({ pressed }) => [
-            styles.slimButton,
+            styles.primaryBottomButton,
             pressed && styles.slimButtonPressed,
           ]}
         >
-          <Text style={styles.slimButtonText}>How It Works</Text>
-        </Pressable>
-
-        <Pressable
-          onPress={() => navigation.navigate('RefillTokens')}
-          style={({ pressed }) => [
-            styles.slimButton,
-            pressed && styles.slimButtonPressed,
-          ]}
-        >
-          <Text style={styles.slimButtonText}>Refill Tokens</Text>
-          <View style={styles.tokenBadgeInButton}>
-            <Feather name="zap" size={scaleSize(12)} color="#FFD700" />
-            <Text style={styles.tokenTextInButton}>{tokenCount}</Text>
-          </View>
+          <Text style={styles.primaryBottomButtonText}>How It Works</Text>
         </Pressable>
       </View>
 
@@ -320,22 +291,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     textAlign: 'center',
   },
-  tokenBadgeInButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: scaleSize(4),
-    marginTop: scaleSize(4),
-  },
-  tokenTextInButton: {
-    color: '#FFD700',
-    fontSize: scaleFont(12),
-    fontFamily: 'Poppins-SemiBold',
-  },
   content: {
     flex: 1,
     paddingHorizontal: scaleSize(24),
-    paddingTop: scaleSize(20),
-    paddingBottom: scaleSize(20),
+    paddingTop: scaleSize(28),
+    paddingBottom: scaleSize(28),
     justifyContent: 'center',
   },
   buttonRow: {
@@ -385,27 +345,32 @@ const styles = StyleSheet.create({
   },
   bottomButtons: {
     paddingHorizontal: scaleSize(24),
-    paddingBottom: scaleSize(40),
+    paddingBottom: scaleSize(44),
     paddingTop: scaleSize(16),
   },
-  slimButton: {
-    height: scaleSize(48),
+  primaryBottomButton: {
+    height: scaleSize(56),
     backgroundColor: '#003F91',
-    borderRadius: scaleSize(12),
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 215, 0, 0.4)',
+    borderRadius: scaleSize(14),
+    borderWidth: 2,
+    borderColor: 'rgba(255, 215, 0, 0.45)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: scaleSize(12),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 4,
   },
   slimButtonPressed: {
     transform: [{ scale: 0.98 }],
     opacity: 0.9,
   },
-  slimButtonText: {
+  primaryBottomButtonText: {
     color: '#fff',
-    fontSize: scaleFont(15),
+    fontSize: scaleFont(17),
     fontFamily: 'Poppins-SemiBold',
+    letterSpacing: 0.2,
   },
   // Modal Styles
   modalOverlay: {

@@ -10,8 +10,13 @@ export default [
     files: ['**/*.js'],
     languageOptions: {
       globals: {
-        ...globals.browser,
         ...globals.es2021,
+        ...globals.node,
+        __DEV__: 'readonly',
+        fetch: 'readonly',
+        FormData: 'readonly',
+        URL: 'readonly',
+        AbortController: 'readonly',
       },
       parserOptions: {
         ecmaVersion: 'latest',
@@ -26,9 +31,6 @@ export default [
     },
     settings: {
       react: { version: 'detect' },
-    },
-    env: {
-      'react-native/react-native': true,
     },
     rules: {
       'no-unused-vars': ['warn', { args: 'none', ignoreRestSiblings: true }],

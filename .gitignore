@@ -1,1 +1,43 @@
+# Secrets and local environment (never commit real keys)
 .env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.jks
+*.keystore
+credentials.json
+*-credentials.json
+google-services.json
+GoogleService-Info.plist
+
+node_modules/
+
+# iOS (managed by Expo prebuild)
+ios/
+
+# Android (managed by Expo prebuild)
+android/
+
+# Build artifacts
+.expo/
+.expo-shared/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporary files
+*.tmp
+*.temp
+.cache/

@@ -22,7 +22,6 @@ import {
   saveSearchCache, 
   getSearchCache 
 } from '../utils/logManager';
-import { getTokens, deductToken, refundToken, initializeTokens } from '../utils/tokenManager';
 import { placesRateLimiter } from '../utils/rateLimiter';
 import { scaleFont, scaleSize } from '../utils/responsive';
 
@@ -33,8 +32,6 @@ export default function FindScreen({ navigation }) {
   const [expandedIds, setExpandedIds] = useState(new Set());
   const [interested, setInterested] = useState({});
   const [message, setMessage] = useState('');
-  const [tokenCount, setTokenCount] = useState(0);
-  const [showOutOfTokens, setShowOutOfTokens] = useState(false);
 
   // Load initial data
   useEffect(() => {
@@ -46,16 +43,8 @@ export default function FindScreen({ navigation }) {
   useFocusEffect(
     useCallback(() => {
       loadSavedSpots();
-      loadTokenCount();
     }, [])
   );
-
-  const loadTokenCount = async () => {
-    await initializeTokens();
-    const count = await getTokens();
-    setTokenCount(count);
-    setShowOutOfTokens(count === 0 && results.length === 0);
-  };
 
   const loadCachedData = async () => {
     const cached = await getSearchCache();
@@ -110,14 +99,6 @@ export default function FindScreen({ navigation }) {
   };
 
   const scanArea = async () => {
-    // Check tokens first
-    const currentTokens = await getTokens();
-    if (currentTokens < 1) {
-      setShowOutOfTokens(true);
-      setMessage('You need tokens to scan for spots.');
-      return;
-    }
-
     if (permissionStatus !== 'granted') {
       const { status } = await Location.requestForegroundPermissionsAsync();
       setPermissionStatus(status);
@@ -127,20 +108,8 @@ export default function FindScreen({ navigation }) {
       }
     }
 
-    // Deduct token before API call
-    const deducted = await deductToken();
-    if (!deducted) {
-      setShowOutOfTokens(true);
-      setMessage('You need tokens to scan for spots.');
-      await loadTokenCount();
-      return;
-    }
-
-    await loadTokenCount(); // Update display
-
     setLoading(true);
     setMessage('');
-    let tokenRefunded = false;
 
     try {
       const loc = await Location.getCurrentPositionAsync({});
@@ -228,25 +197,12 @@ export default function FindScreen({ navigation }) {
       setResults(finalResults);
       await saveSearchCache(finalResults);
 
-      // Safety check: Refund token if no results
       if (finalResults.length === 0) {
-        await refundToken();
-        tokenRefunded = true;
-        await loadTokenCount();
-        setMessage(
-          'Nothing found nearby. Token refunded — try scanning again later.'
-        );
-      } else {
-        setShowOutOfTokens(false);
+        setMessage('Nothing found nearby. Try scanning again later.');
       }
     } catch (e) {
       if (__DEV__) {
         console.log('API fetch failed:', e.message);
-      }
-      // Refund token on error
-      if (!tokenRefunded) {
-        await refundToken();
-        await loadTokenCount();
       }
       // Provide user-friendly error message
       let errorMessage = 'Failed to fetch spots.';
@@ -341,10 +297,6 @@ export default function FindScreen({ navigation }) {
           </Text>
         </View>
         <View style={styles.headerRight}>
-          <View style={styles.tokenBadge}>
-            <Feather name="zap" size={scaleSize(14)} color="#FFD700" />
-            <Text style={styles.tokenText}>{tokenCount}</Text>
-          </View>
           <Pressable 
             onPress={scanArea} 
             style={({ pressed }) => [
@@ -366,23 +318,7 @@ export default function FindScreen({ navigation }) {
         </View>
       )}
 
-      {showOutOfTokens && !loading && results.length === 0 && (
-        <View style={styles.emptyContainer}>
-          <Feather name="zap" size={scaleSize(48)} color="rgba(255,215,0,0.3)" />
-          <Text style={styles.outOfTokensTitle}>Out of Tokens</Text>
-          <Text style={styles.message}>
-            You need tokens to scan for spots. Each scan costs 1 token.
-          </Text>
-          <Pressable
-            style={styles.refillButton}
-            onPress={() => navigation.navigate('Home')}
-          >
-            <Text style={styles.refillButtonText}>Refill Tokens</Text>
-          </Pressable>
-        </View>
-      )}
-
-      {!loading && !showOutOfTokens && results.length === 0 && message !== '' && (
+      {!loading && results.length === 0 && message !== '' && (
         <View style={styles.emptyContainer}>
           <Feather name="search" size={scaleSize(48)} color="rgba(255,255,255,0.1)" />
           <Text style={styles.message}>{message}</Text>
@@ -427,22 +363,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: scaleSize(12),
-  },
-  tokenBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,215,0,0.1)',
-    paddingHorizontal: scaleSize(10),
-    paddingVertical: scaleSize(6),
-    borderRadius: scaleSize(12),
-    borderWidth: 1,
-    borderColor: 'rgba(255,215,0,0.3)',
-    gap: scaleSize(6),
-  },
-  tokenText: {
-    color: '#FFD700',
-    fontSize: scaleFont(14),
-    fontFamily: 'Poppins-SemiBold',
   },
   title: {
     color: '#fff',
@@ -500,30 +420,6 @@ const styles = StyleSheet.create({
     marginTop: scaleSize(16),
     textAlign: 'center',
     lineHeight: scaleSize(22),
-  },
-  outOfTokensTitle: {
-    color: '#fff',
-    fontSize: scaleFont(22),
-    fontFamily: 'Poppins-SemiBold',
-    marginTop: scaleSize(20),
-    marginBottom: scaleSize(8),
-  },
-  refillButton: {
-    marginTop: scaleSize(24),
-    backgroundColor: '#FFD700',
-    paddingHorizontal: scaleSize(32),
-    paddingVertical: scaleSize(14),
-    borderRadius: scaleSize(12),
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  refillButtonText: {
-    color: '#001f3f',
-    fontSize: scaleFont(16),
-    fontFamily: 'Poppins-SemiBold',
   },
   card: {
     backgroundColor: 'rgba(255,255,255,0.05)',

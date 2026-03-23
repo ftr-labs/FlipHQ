@@ -14,19 +14,8 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Feather } from '@expo/vector-icons';
-import { useFocusEffect, CommonActions } from '@react-navigation/native';
 import { sendMessageToFlipBot } from '../utils/aiService';
-import { 
-  getTokens, 
-  initializeTokens, 
-  refundToken, 
-  incrementPromptCount, 
-  resetPromptCount,
-  getPromptCount 
-} from '../utils/tokenManager';
-import { scaleFont, scaleSize, getResponsiveValue } from '../utils/responsive';
-
-const MESSAGES_PER_TOKEN = 3; // 1 token = 3 user messages (3 exchanges)
+import { scaleFont, scaleSize } from '../utils/responsive';
 
 export default function FlipBotScreen({ navigation }) {
   const [messages, setMessages] = useState([
@@ -39,25 +28,8 @@ export default function FlipBotScreen({ navigation }) {
   ]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [tokenCount, setTokenCount] = useState(0);
-  const [showOutOfTokens, setShowOutOfTokens] = useState(false);
   const flatListRef = useRef(null);
   const spinAnim = useRef(new Animated.Value(0)).current;
-
-  useFocusEffect(
-    React.useCallback(() => {
-      loadTokenCount();
-      // Note: Prompt count is persisted, so we don't reset it on focus
-      // This ensures the 3-prompts-per-token ratio works across app restarts
-    }, [])
-  );
-
-  const loadTokenCount = async () => {
-    await initializeTokens(); // Ensure initialized
-    const count = await getTokens();
-    setTokenCount(count);
-    setShowOutOfTokens(count === 0);
-  };
 
   useEffect(() => {
     // Auto-scroll to bottom when new messages arrive
@@ -88,20 +60,6 @@ export default function FlipBotScreen({ navigation }) {
     const trimmedText = inputText.trim();
     if (!trimmedText || isLoading) return;
 
-    // Get current prompt count to check if we'll need a token for this prompt
-    const currentPromptCount = await getPromptCount();
-    const willNeedToken = (currentPromptCount + 1) % 3 === 0;
-
-    // If this prompt will trigger token deduction, check we have tokens
-    if (willNeedToken) {
-      const currentTokens = await getTokens();
-      if (currentTokens < 1) {
-        setShowOutOfTokens(true);
-        await loadTokenCount();
-        return;
-      }
-    }
-
     // Add user message
     const userMessage = {
       id: Date.now().toString(),
@@ -114,19 +72,7 @@ export default function FlipBotScreen({ navigation }) {
     setInputText('');
     setIsLoading(true);
 
-    // Track if token was deducted for this prompt (for refund logic)
-    let tokenDeducted = false;
-
     try {
-      // Increment prompt count (this will deduct token if count reaches 3)
-      // This happens BEFORE the API call so we charge even if API fails
-      tokenDeducted = await incrementPromptCount();
-      
-      // Update token display if token was deducted
-      if (tokenDeducted) {
-        await loadTokenCount();
-      }
-
       // Build conversation history for context
       const conversationHistory = messages
         .filter(m => m.role !== 'system')
@@ -148,13 +94,6 @@ export default function FlipBotScreen({ navigation }) {
 
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
-      // If API call failed and we just deducted a token, refund it
-      if (tokenDeducted) {
-        await refundToken();
-        await resetPromptCount(); // Reset prompt count since we refunded
-        await loadTokenCount();
-      }
-
       // Show error message
       const errorMessage = {
         id: (Date.now() + 1).toString(),
@@ -202,14 +141,7 @@ export default function FlipBotScreen({ navigation }) {
       
       <View style={styles.header}>
         <Pressable 
-          onPress={() => {
-            navigation.dispatch(
-              CommonActions.reset({
-                index: 0,
-                routes: [{ name: 'Home' }],
-              })
-            );
-          }} 
+          onPress={() => navigation.goBack()} 
           style={styles.backButton}
         >
           <Feather name="arrow-left" size={scaleSize(24)} color="#FFD700" />
@@ -225,51 +157,15 @@ export default function FlipBotScreen({ navigation }) {
             Your AI Sidekick
           </Text>
         </View>
-        <View style={styles.tokenBadge}>
-          <Feather name="zap" size={scaleSize(14)} color="#FFD700" />
-          <Text style={styles.tokenText}>{tokenCount}</Text>
-        </View>
+        <View style={styles.headerSpacer} />
       </View>
 
-      {showOutOfTokens ? (
-        <View style={styles.outOfTokensContainer}>
-          <View style={styles.outOfTokensCard}>
-            <Feather name="zap" size={scaleSize(48)} color="rgba(255,215,0,0.3)" />
-            <Text style={styles.outOfTokensTitle}>Out of Tokens</Text>
-            <Text style={styles.outOfTokensText}>
-              You need tokens to chat with FlipBot. 1 token = 3 messages.
-            </Text>
-            <Pressable
-              style={styles.refillButton}
-              onPress={() => {
-                // Will open refill modal - for now just navigate to home
-                navigation.navigate('Home');
-              }}
-            >
-              <Text style={styles.refillButtonText}>Refill Tokens</Text>
-            </Pressable>
-            <Pressable
-              style={styles.backButtonOut}
-              onPress={() => {
-                navigation.dispatch(
-                  CommonActions.reset({
-                    index: 0,
-                    routes: [{ name: 'Home' }],
-                  })
-                );
-              }}
-            >
-              <Text style={styles.backButtonText}>Go Back</Text>
-            </Pressable>
-          </View>
-        </View>
-      ) : (
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={styles.chatContainer}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-        >
-          <FlatList
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.chatContainer}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      >
+        <FlatList
           ref={flatListRef}
           data={messages}
           keyExtractor={(item) => item.id}
@@ -292,10 +188,10 @@ export default function FlipBotScreen({ navigation }) {
                       ],
                     }}
                   >
-                    <Feather name="dollar-sign" size={scaleSize(16)} color="#FFD700" />
+                    <Feather name="message-circle" size={scaleSize(16)} color="#FFD700" />
                   </Animated.View>
                   <Text style={[styles.messageText, styles.assistantMessageText, { marginLeft: scaleSize(10) }]}>
-                    Calculating profit...
+                    FlipBot is thinking...
                   </Text>
                 </View>
               </View>
@@ -328,7 +224,6 @@ export default function FlipBotScreen({ navigation }) {
           </Pressable>
         </View>
       </KeyboardAvoidingView>
-      )}
     </SafeAreaView>
   );
 }
@@ -353,6 +248,9 @@ const styles = StyleSheet.create({
   },
   headerCenter: {
     alignItems: 'center',
+  },
+  headerSpacer: {
+    width: scaleSize(36),
   },
   title: {
     color: '#fff',
@@ -467,79 +365,5 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.05)',
     shadowOpacity: 0,
     elevation: 0,
-  },
-  tokenBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,215,0,0.1)',
-    paddingHorizontal: scaleSize(10),
-    paddingVertical: scaleSize(6),
-    borderRadius: scaleSize(12),
-    borderWidth: 1,
-    borderColor: 'rgba(255,215,0,0.3)',
-    gap: scaleSize(6),
-  },
-  tokenText: {
-    color: '#FFD700',
-    fontSize: scaleFont(14),
-    fontFamily: 'Poppins-SemiBold',
-  },
-  outOfTokensContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: scaleSize(24),
-  },
-  outOfTokensCard: {
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderRadius: scaleSize(24),
-    padding: scaleSize(32),
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,215,0,0.2)',
-    width: '100%',
-    maxWidth: getResponsiveValue(scaleSize(320), scaleSize(360), scaleSize(400)),
-  },
-  outOfTokensTitle: {
-    color: '#fff',
-    fontSize: scaleFont(24),
-    fontFamily: 'Poppins-SemiBold',
-    marginTop: scaleSize(20),
-    marginBottom: scaleSize(12),
-  },
-  outOfTokensText: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: scaleFont(15),
-    fontFamily: 'Poppins-Regular',
-    textAlign: 'center',
-    lineHeight: scaleSize(22),
-    marginBottom: scaleSize(32),
-  },
-  refillButton: {
-    backgroundColor: '#FFD700',
-    paddingVertical: scaleSize(16),
-    paddingHorizontal: scaleSize(32),
-    borderRadius: scaleSize(12),
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: scaleSize(16),
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  refillButtonText: {
-    color: '#001f3f',
-    fontSize: scaleFont(16),
-    fontFamily: 'Poppins-SemiBold',
-  },
-  backButtonOut: {
-    paddingVertical: scaleSize(12),
-  },
-  backButtonText: {
-    color: 'rgba(255,255,255,0.4)',
-    fontSize: scaleFont(14),
-    fontFamily: 'Poppins-SemiBold',
   },
 });

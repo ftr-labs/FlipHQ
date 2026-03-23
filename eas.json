@@ -13,7 +13,13 @@
     "production": {
       "android": {
         "buildType": "app-bundle"
+      },
+      "ios": {
+        "simulator": false
       }
     }
+  },
+  "cli": {
+    "version": ">= 13.2.0"
   }
 }

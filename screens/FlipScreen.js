@@ -180,14 +180,7 @@ export default function FlipScreen({ navigation }) {
       <StatusBar style="light" />
       <View style={styles.header}>
         <Pressable 
-          onPress={() => {
-            navigation.dispatch(
-              CommonActions.reset({
-                index: 0,
-                routes: [{ name: 'Home' }],
-              })
-            );
-          }} 
+          onPress={() => navigation.goBack()} 
           style={styles.backButton}
         >
           <Feather name="arrow-left" size={scaleSize(24)} color="#FFD700" />

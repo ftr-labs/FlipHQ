@@ -1,0 +1,66 @@
+# Dependencies (EAS will install these)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# iOS (managed by Expo prebuild)
+ios/
+
+# Android (exclude for iOS builds to reduce size)
+android/
+
+# Build artifacts
+.expo/
+.expo-shared/
+dist/
+build/
+*.log
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment files (EAS uses secrets)
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Documentation (keep README)
+*.md
+!README.md
+
+# Test files
+__tests__/
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts
+
+# Backup files
+*.bak
+*.backup
+package.json._*
+package.json.iv*
+package-lock.json.*
+
+# HTML files (not needed for build)
+*.html
+!index.html
+
