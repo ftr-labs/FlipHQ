@@ -17,6 +17,101 @@ import { Feather } from '@expo/vector-icons';
 import { sendMessageToFlipBot } from '../utils/aiService';
 import { scaleFont, scaleSize } from '../utils/responsive';
 
+const renderInline = (text, baseStyle) => {
+  const parts = text.split(/(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|\*[^*\n]+\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('***') && part.endsWith('***')) {
+      return (
+        <Text key={i} style={[baseStyle, { fontFamily: 'Poppins-SemiBold', color: '#FFD700' }]}>
+          {part.slice(3, -3)}
+        </Text>
+      );
+    }
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return (
+        <Text key={i} style={[baseStyle, { fontFamily: 'Poppins-SemiBold', color: '#FFD700' }]}>
+          {part.slice(2, -2)}
+        </Text>
+      );
+    }
+    if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+      return (
+        <Text key={i} style={[baseStyle, { color: 'rgba(255,215,0,0.75)' }]}>
+          {part.slice(1, -1)}
+        </Text>
+      );
+    }
+    return <Text key={i} style={baseStyle}>{part}</Text>;
+  });
+};
+
+const MarkdownText = ({ text, style }) => {
+  const lines = text.split('\n');
+  return (
+    <View>
+      {lines.map((line, i) => {
+        if (!line.trim()) {
+          return <View key={i} style={{ height: scaleSize(6) }} />;
+        }
+
+        if (line.startsWith('### ')) {
+          return (
+            <Text key={i} style={[style, { fontFamily: 'Poppins-SemiBold', fontSize: scaleFont(15), color: '#FFD700', marginBottom: scaleSize(4) }]}>
+              {renderInline(line.slice(4), style)}
+            </Text>
+          );
+        }
+        if (line.startsWith('## ')) {
+          return (
+            <Text key={i} style={[style, { fontFamily: 'Poppins-SemiBold', fontSize: scaleFont(17), color: '#FFD700', marginBottom: scaleSize(6) }]}>
+              {renderInline(line.slice(3), style)}
+            </Text>
+          );
+        }
+        if (line.startsWith('# ')) {
+          return (
+            <Text key={i} style={[style, { fontFamily: 'Poppins-SemiBold', fontSize: scaleFont(19), color: '#FFD700', marginBottom: scaleSize(8) }]}>
+              {renderInline(line.slice(2), style)}
+            </Text>
+          );
+        }
+
+        const bulletMatch = line.match(/^[-*•]\s+(.*)/);
+        if (bulletMatch) {
+          return (
+            <View key={i} style={{ flexDirection: 'row', marginBottom: scaleSize(4), paddingLeft: scaleSize(4) }}>
+              <Text style={[style, { color: '#FFD700', marginRight: scaleSize(8) }]}>•</Text>
+              <Text style={[style, { flex: 1 }]}>{renderInline(bulletMatch[1], style)}</Text>
+            </View>
+          );
+        }
+
+        const numberedMatch = line.match(/^(\d+)\.\s+(.*)/);
+        if (numberedMatch) {
+          return (
+            <View key={i} style={{ flexDirection: 'row', marginBottom: scaleSize(4), paddingLeft: scaleSize(4) }}>
+              <Text style={[style, { color: '#FFD700', marginRight: scaleSize(8), minWidth: scaleSize(20) }]}>
+                {numberedMatch[1]}.
+              </Text>
+              <Text style={[style, { flex: 1 }]}>{renderInline(numberedMatch[2], style)}</Text>
+            </View>
+          );
+        }
+
+        if (line.match(/^[-_]{3,}$/)) {
+          return <View key={i} style={{ height: 1, backgroundColor: 'rgba(255,215,0,0.2)', marginVertical: scaleSize(8) }} />;
+        }
+
+        return (
+          <Text key={i} style={[style, { marginBottom: scaleSize(2) }]}>
+            {renderInline(line, style)}
+          </Text>
+        );
+      })}
+    </View>
+  );
+};
+
 export default function FlipBotScreen({ navigation }) {
   const [messages, setMessages] = useState([
     {
@@ -119,12 +214,16 @@ export default function FlipBotScreen({ navigation }) {
           isUser ? styles.userBubble : styles.assistantBubble,
           isError && styles.errorBubble
         ]}>
-          <Text style={[
-            styles.messageText,
-            isUser ? styles.userMessageText : styles.assistantMessageText
-          ]}>
-            {item.content}
-          </Text>
+          {isUser ? (
+            <Text style={[styles.messageText, styles.userMessageText]}>
+              {item.content}
+            </Text>
+          ) : (
+            <MarkdownText
+              text={item.content}
+              style={[styles.messageText, styles.assistantMessageText]}
+            />
+          )}
         </View>
         {!isUser && (
           <View style={styles.botIconContainer}>
@@ -175,7 +274,7 @@ export default function FlipBotScreen({ navigation }) {
           ListFooterComponent={
             isLoading ? (
               <View style={styles.loadingWrapper}>
-                <View style={styles.assistantBubble}>
+                <View style={[styles.assistantBubble, styles.loadingBubble]}>
                   <Animated.View
                     style={{
                       transform: [
@@ -218,7 +317,7 @@ export default function FlipBotScreen({ navigation }) {
           >
             <Feather 
               name="send" 
-              size={18} 
+              size={scaleSize(18)} 
               color={(!inputText.trim() || isLoading) ? 'rgba(255,255,255,0.3)' : '#001f3f'} 
             />
           </Pressable>
@@ -296,6 +395,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,215,0,0.2)',
     alignSelf: 'flex-start',
+  },
+  loadingBubble: {
     flexDirection: 'row',
     alignItems: 'center',
   },

@@ -17,7 +17,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, CommonActions } from '@react-navigation/native';
 import { getLoggedItems, updateItemStatus } from '../utils/logManager';
-import { calculateValuation } from '../utils/valuation';
+import { valuationForItem } from '../utils/valuation';
 import { categoryToolkits } from '../constants/valuationMetadata';
 import { scaleFont, scaleSize, getResponsiveValue } from '../utils/responsive';
 
@@ -109,13 +109,7 @@ export default function FixScreen({ navigation }) {
       );
     }
 
-    const valuation = calculateValuation({
-      category: selectedItem.category,
-      subcategory: selectedItem.subcategory,
-      type: selectedItem.type,
-      condition: selectedItem.condition,
-      acquisitionCost: selectedItem.acquisitionCost || 0,
-    });
+    const valuation = valuationForItem(selectedItem);
 
     const toolkit = categoryToolkits[selectedItem.category] || [];
 
@@ -124,7 +118,7 @@ export default function FixScreen({ navigation }) {
         <View style={styles.itemHeader}>
           <View>
             <Text style={styles.label}>Repairing Item:</Text>
-            <Text style={styles.itemName}>{selectedItem.name}</Text>
+            <Text style={styles.itemName} numberOfLines={1} ellipsizeMode="tail">{selectedItem.name}</Text>
           </View>
           <View style={[styles.statusBadge, { backgroundColor: 'rgba(255,215,0,0.1)' }]}>
             <Text style={styles.statusText}>{selectedItem.status}</Text>
@@ -270,7 +264,7 @@ export default function FixScreen({ navigation }) {
                   ]}
                 >
                   <View>
-                    <Text style={styles.optionName}>{item.name}</Text>
+                    <Text style={styles.optionName} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
                     <Text style={styles.optionSub}>{item.category} • {item.condition}</Text>
                   </View>
                   {selectedItem?.id === item.id && (

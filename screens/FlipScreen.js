@@ -16,7 +16,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, CommonActions } from '@react-navigation/native';
 import { getLoggedItems, updateItemStatus } from '../utils/logManager';
-import { calculateValuation } from '../utils/valuation';
+import { valuationForItem, formatMoney } from '../utils/valuation';
 import { categoryPlatforms } from '../constants/valuationMetadata';
 import { scaleFont, scaleSize, getResponsiveValue } from '../utils/responsive';
 
@@ -79,13 +79,7 @@ export default function FlipScreen({ navigation }) {
       );
     }
 
-    const valuation = calculateValuation({
-      category: selectedItem.category,
-      subcategory: selectedItem.subcategory,
-      type: selectedItem.type,
-      condition: selectedItem.condition,
-      acquisitionCost: selectedItem.acquisitionCost || 0,
-    });
+    const valuation = valuationForItem(selectedItem);
 
     const platforms = categoryPlatforms[selectedItem.category] || [];
 
@@ -94,7 +88,7 @@ export default function FlipScreen({ navigation }) {
         <View style={styles.itemHeader}>
           <View>
             <Text style={styles.label}>Listing Strategy for:</Text>
-            <Text style={styles.itemName}>{selectedItem.name}</Text>
+            <Text style={styles.itemName} numberOfLines={1} ellipsizeMode="tail">{selectedItem.name}</Text>
           </View>
           <View style={styles.demandBox}>
             <Text style={styles.demandLabel}>Demand</Text>
@@ -147,7 +141,7 @@ export default function FlipScreen({ navigation }) {
               >
                 <Feather 
                   name={checkedItems[index] ? "check-square" : "square"} 
-                  size={18} 
+                  size={scaleSize(18)}
                   color={checkedItems[index] ? "#32CD32" : "rgba(255,255,255,0.3)"} 
                 />
                 <Text style={[
@@ -228,14 +222,8 @@ export default function FlipScreen({ navigation }) {
                   ]}
                 >
                   <View>
-                    <Text style={styles.optionName}>{item.name}</Text>
-                    <Text style={styles.optionSub}>{item.status} • Profit: ${calculateValuation({
-                      category: item.category,
-                      subcategory: item.subcategory,
-                      type: item.type,
-                      condition: item.condition,
-                      acquisitionCost: item.acquisitionCost || 0,
-                    }).profit}</Text>
+                    <Text style={styles.optionName} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
+                    <Text style={styles.optionSub}>{item.status} • Profit: {formatMoney(valuationForItem(item).profit)}</Text>
                   </View>
                   {selectedItem?.id === item.id && (
                     <Feather name="check" size={scaleSize(20)} color="#FFD700" />

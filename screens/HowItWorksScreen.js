@@ -11,7 +11,7 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { Feather } from '@expo/vector-icons';
 import { CommonActions } from '@react-navigation/native';
-import { scaleFont, scaleSize, getResponsiveValue } from '../utils/responsive';
+import { scaleFont, scaleSize } from '../utils/responsive';
 
 const steps = [
   {
@@ -54,7 +54,7 @@ const steps = [
     title: 'SECURE',
     icon: 'shield',
     color: '#00FA9A',
-    body: 'No accounts. No ads. Your data is stored privately on your phone. If you delete the app, your info is gone forever. Clean and lean.',
+    body: 'No accounts. No ads. Your inventory, finds, and history stay privately on your phone. To answer you, FlipBot, Log, and Find send only what you type or where you are, and we never store it or link it to you. Delete the app and your info is gone forever.',
   },
 ];
 

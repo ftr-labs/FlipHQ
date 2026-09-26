@@ -48,17 +48,6 @@ class RateLimiter {
 
     return Math.max(0, timeUntilWindowExpires);
   }
-
-  /**
-   * Wait until a request can be made
-   * @returns {Promise<void>}
-   */
-  async waitUntilCanMakeRequest() {
-    const waitTime = this.getTimeUntilNextRequest();
-    if (waitTime > 0) {
-      await new Promise(resolve => setTimeout(resolve, waitTime));
-    }
-  }
 }
 
 // Create rate limiters for different API endpoints

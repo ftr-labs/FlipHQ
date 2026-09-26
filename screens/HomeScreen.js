@@ -256,9 +256,9 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   headerButton: {
-    width: scaleSize(40),
-    height: scaleSize(40),
-    borderRadius: scaleSize(20),
+    width: Math.max(scaleSize(40), 44),
+    height: Math.max(scaleSize(40), 44),
+    borderRadius: Math.max(scaleSize(40), 44) / 2,
     backgroundColor: 'rgba(255, 215, 0, 0.12)',
     alignItems: 'center',
     justifyContent: 'center',

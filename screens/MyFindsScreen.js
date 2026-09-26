@@ -19,7 +19,7 @@ import {
   getSavedSpots, 
   removeSavedSpot 
 } from '../utils/logManager';
-import { calculateValuation } from '../utils/valuation';
+import { valuationForItem, getValueRange, formatMoney } from '../utils/valuation';
 import { scaleFont, scaleSize, getResponsiveValue } from '../utils/responsive';
 
 const statusColors = {
@@ -30,11 +30,20 @@ const statusColors = {
 
 const statusOrder = ['Found', 'Fixed', 'Flipped'];
 
+// Prefers real numbers the user entered, falling back to the estimate.
+const getItemFinancials = (item) => {
+  const val = valuationForItem(item);
+  return {
+    fixCost: item.fixCost !== undefined ? item.fixCost : val.fixCost,
+    postFixValue: item.postFixValue || val.postFixValue,
+    acquisitionCost: item.acquisitionCost || 0,
+  };
+};
+
 export default function MyFindsScreen({ navigation }) {
   const [activeTab, setActiveTab] = useState('inventory'); // 'inventory' or 'leads'
   const [inventory, setInventory] = useState([]);
   const [leads, setLeads] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [showDeleteItemModal, setShowDeleteItemModal] = useState(false);
   const [showDeleteLeadModal, setShowDeleteLeadModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
@@ -47,7 +56,6 @@ export default function MyFindsScreen({ navigation }) {
   );
 
   const loadData = async () => {
-    setLoading(true);
     if (activeTab === 'inventory') {
       const items = await getLoggedItems();
       setInventory(items);
@@ -55,7 +63,6 @@ export default function MyFindsScreen({ navigation }) {
       const spots = await getSavedSpots();
       setLeads(spots);
     }
-    setLoading(false);
   };
 
   const handleToggleStatus = async (item) => {
@@ -101,43 +108,21 @@ export default function MyFindsScreen({ navigation }) {
   const calculateStats = () => {
     const active = inventory.filter(i => i.status !== 'Flipped');
     const flipped = inventory.filter(i => i.status === 'Flipped');
-    
-    const potentialProfitLow = active.reduce((sum, i) => {
-      // Use real fixCost if available, otherwise get from valuation
-      const realFixCost = i.fixCost !== undefined ? i.fixCost : null;
-      const val = calculateValuation({ category: i.category, subcategory: i.subcategory, type: i.type, condition: i.condition, acquisitionCost: i.acquisitionCost || 0 });
-      const fixCostToUse = realFixCost !== null ? realFixCost : val.fixCost;
-      const postFixValue = i.postFixValue || val.postFixValue;
-      const acquisitionCost = i.acquisitionCost || 0;
-      // Calculate low profit: postFixValue - fixCost - acquisitionCost
-      const profit = postFixValue - fixCostToUse - acquisitionCost;
-      return sum + profit;
-    }, 0);
 
-    const potentialProfitHigh = active.reduce((sum, i) => {
-      // Use real fixCost if available, otherwise get from valuation
-      const realFixCost = i.fixCost !== undefined ? i.fixCost : null;
-      const val = calculateValuation({ category: i.category, subcategory: i.subcategory, type: i.type, condition: i.condition, acquisitionCost: i.acquisitionCost || 0 });
-      const fixCostToUse = realFixCost !== null ? realFixCost : val.fixCost;
-      const postFixValue = i.postFixValue || val.postFixValue;
-      const acquisitionCost = i.acquisitionCost || 0;
-      // Calculate high profit: postFixValue - fixCost - acquisitionCost
-      const profit = postFixValue - fixCostToUse - acquisitionCost;
-      return sum + profit;
-    }, 0);
+    let potentialProfitLow = 0;
+    let potentialProfitHigh = 0;
+    active.forEach((i) => {
+      const { fixCost, postFixValue, acquisitionCost } = getItemFinancials(i);
+      const { lowValue, highValue } = getValueRange(postFixValue, i.subcategory);
+      potentialProfitLow += lowValue - fixCost - acquisitionCost;
+      potentialProfitHigh += highValue - fixCost - acquisitionCost;
+    });
 
     const totalEarned = flipped.reduce((sum, i) => {
-      // Use real sellPrice if available, otherwise calculate from valuation
       if (i.sellPrice !== undefined && i.sellPrice !== null) {
-        const realFixCost = i.fixCost !== undefined ? i.fixCost : 0;
-        const acquisitionCost = i.acquisitionCost || 0;
-        const profit = i.sellPrice - realFixCost - acquisitionCost;
-        return sum + profit;
-      } else {
-        // Fallback to estimated profit
-        const val = calculateValuation({ category: i.category, subcategory: i.subcategory, type: i.type, condition: i.condition, acquisitionCost: i.acquisitionCost || 0 });
-        return sum + val.profit;
+        return sum + i.sellPrice - (i.fixCost !== undefined ? i.fixCost : 0) - (i.acquisitionCost || 0);
       }
+      return sum + valuationForItem(i).profit;
     }, 0);
 
     return { potentialProfitLow, potentialProfitHigh, totalEarned };
@@ -146,31 +131,15 @@ export default function MyFindsScreen({ navigation }) {
   const stats = calculateStats();
 
   const renderInventoryItem = ({ item }) => {
-    // Calculate values using real numbers when available, estimates as fallback
-    const val = calculateValuation({ 
-      category: item.category, 
-      subcategory: item.subcategory, 
-      type: item.type, 
-      condition: item.condition, 
-      acquisitionCost: item.acquisitionCost || 0 
-    });
-    
-    // Use real fixCost if available, otherwise use estimate
-    const fixCostToUse = item.fixCost !== undefined ? item.fixCost : val.fixCost;
-    
-    // Use real postFixValue if available, otherwise use estimate
-    const postFixValueToUse = item.postFixValue || val.postFixValue;
-    
-    // Calculate profit: for flipped items use sellPrice, otherwise use postFixValue
-    let profit;
-    if (item.status === 'Flipped' && item.sellPrice !== undefined && item.sellPrice !== null) {
-      // Use real sell price for flipped items
-      profit = item.sellPrice - fixCostToUse - (item.acquisitionCost || 0);
-    } else {
-      // Use postFixValue for non-flipped items
-      profit = postFixValueToUse - fixCostToUse - (item.acquisitionCost || 0);
-    }
-    
+    const {
+      fixCost: fixCostToUse,
+      postFixValue: postFixValueToUse,
+      acquisitionCost,
+    } = getItemFinancials(item);
+
+    const hasSellPrice = item.status === 'Flipped' && item.sellPrice !== undefined && item.sellPrice !== null;
+    const profit = (hasSellPrice ? item.sellPrice : postFixValueToUse) - fixCostToUse - acquisitionCost;
+
     return (
       <Pressable 
         style={[styles.card, { borderLeftColor: statusColors[item.status] }]}
@@ -178,7 +147,7 @@ export default function MyFindsScreen({ navigation }) {
       >
         <View style={styles.cardHeader}>
           <View style={styles.cardTitleContainer}>
-            <Text style={styles.itemName}>{item.name}</Text>
+            <Text style={styles.itemName} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
             <Text style={styles.itemCategory}>{item.category} • {item.subcategory}</Text>
           </View>
           <Pressable 
@@ -204,7 +173,7 @@ export default function MyFindsScreen({ navigation }) {
           <View style={styles.statBox}>
             <Text style={styles.statLabel}>Profit</Text>
             <Text style={[styles.statValue, { color: profit >= 0 ? '#32CD32' : '#ff4444' }]}>
-              ${Math.round(profit)}
+              {formatMoney(Math.round(profit))}
             </Text>
           </View>
         </View>
@@ -216,7 +185,7 @@ export default function MyFindsScreen({ navigation }) {
     <View style={styles.card}>
       <View style={styles.cardHeader}>
         <View style={styles.cardTitleContainer}>
-          <Text style={styles.itemName}>{item.name}</Text>
+          <Text style={styles.itemName} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
           <Text style={styles.itemCategory}>{item.address}</Text>
         </View>
         <Pressable 
@@ -276,12 +245,12 @@ export default function MyFindsScreen({ navigation }) {
         <View style={styles.statsHeader}>
           <View style={styles.summaryBox}>
             <Text style={styles.summaryLabel}>Potential Profit</Text>
-            <Text style={styles.summaryValue}>${stats.potentialProfitLow}-${stats.potentialProfitHigh}</Text>
+            <Text style={styles.summaryValue}>{formatMoney(stats.potentialProfitLow)} – {formatMoney(stats.potentialProfitHigh)}</Text>
           </View>
           <View style={styles.summaryDivider} />
           <View style={styles.summaryBox}>
             <Text style={styles.summaryLabel}>Total Earned</Text>
-            <Text style={[styles.summaryValue, { color: '#FFD700' }]}>${stats.totalEarned}</Text>
+            <Text style={[styles.summaryValue, { color: '#FFD700' }]}>{formatMoney(Math.round(stats.totalEarned))}</Text>
           </View>
         </View>
       )}
@@ -302,7 +271,7 @@ export default function MyFindsScreen({ navigation }) {
           <View style={styles.emptyContainer}>
             <Feather 
               name={activeTab === 'inventory' ? "box" : "map-pin"} 
-              size={48} 
+              size={scaleSize(48)} 
               color="rgba(255,255,255,0.1)" 
             />
             <Text style={styles.emptyText}>

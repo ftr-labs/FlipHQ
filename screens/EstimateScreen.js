@@ -14,7 +14,7 @@ import {
 import { useRoute, useNavigation, CommonActions } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { saveLoggedItem } from '../utils/logManager';
-import { calculateValuation } from '../utils/valuation';
+import { calculateValuation, formatMoney } from '../utils/valuation';
 import { scaleFont, scaleSize, getResponsiveValue } from '../utils/responsive';
 
 export default function EstimateScreen() {
@@ -25,9 +25,11 @@ export default function EstimateScreen() {
     subcategory, 
     condition, 
     type, 
-    source, 
+    source,
     itemName: initialItemName,
-    acquisitionCost = 0 
+    acquisitionCost = 0,
+    marketPrice = null,
+    marketSampleSize = 0,
   } = route.params || {};
 
   const [showNameModal, setShowNameModal] = useState(false);
@@ -57,7 +59,9 @@ export default function EstimateScreen() {
     subcategory,
     type,
     condition,
-    acquisitionCost
+    acquisitionCost,
+    marketPrice,
+    marketSampleSize,
   }) : {
     estimatedValue: 0,
     fixCost: 0,
@@ -67,19 +71,23 @@ export default function EstimateScreen() {
     highProfit: 0,
     demandScore: 0,
     fixabilityScore: 0,
-    rating: 0
+    rating: 0,
+    usedMarketData: false,
+    marketSampleSize: 0,
   };
 
-  const { 
-    estimatedValue, 
-    fixCost, 
-    postFixValue, 
-    profit, 
+  const {
+    estimatedValue,
+    fixCost,
+    postFixValue,
+    profit,
     lowProfit,
     highProfit,
     demandScore,
     fixabilityScore,
-    rating 
+    rating,
+    usedMarketData,
+    marketSampleSize: usedSampleSize,
   } = valuation;
 
   const flipWorthiness = '⭐'.repeat(rating).padEnd(5, '☆');
@@ -161,6 +169,8 @@ export default function EstimateScreen() {
       postFixValue,
       acquisitionCost,
       profit, // Save the calculated profit
+      marketPrice,
+      marketSampleSize,
       source: source || 'Custom Entry',
       loggedAt: new Date().toISOString(),
     };
@@ -353,7 +363,7 @@ export default function EstimateScreen() {
                 <View style={styles.detailItem}>
                   <Text style={styles.detailLabel}>Est. Profit Range</Text>
                   <Text style={[styles.detailValue, { color: lowProfit >= 0 ? '#32CD32' : '#ff4444' }]}>
-                    ${lowProfit} – ${highProfit}
+                    {formatMoney(lowProfit)} – {formatMoney(highProfit)}
                   </Text>
                 </View>
                 <View style={styles.detailItem}>
@@ -385,7 +395,9 @@ export default function EstimateScreen() {
             </View>
 
             <Text style={styles.disclosureText}>
-              Valuations are estimates based on market data and may vary. Always research current market prices before making purchase decisions.
+              {usedMarketData
+                ? `These are rough numbers, partially informed by ${usedSampleSize} current eBay listing${usedSampleSize === 1 ? '' : 's'} for similar items. Always research current market prices before making purchase decisions.`
+                : 'Valuations are estimates based on market data and may vary. Always research current market prices before making purchase decisions.'}
             </Text>
           </>
         )}
@@ -679,16 +691,6 @@ const styles = StyleSheet.create({
     marginBottom: scaleSize(20),
     paddingTop: scaleSize(24),
   },
-  guidanceIconContainer: {
-    width: scaleSize(64),
-    height: scaleSize(64),
-    borderRadius: scaleSize(32),
-    backgroundColor: 'rgba(255, 215, 0, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: scaleSize(20),
-    marginTop: 0,
-  },
   guidanceTitle: {
     color: '#fff',
     fontSize: scaleFont(20),
@@ -697,13 +699,6 @@ const styles = StyleSheet.create({
     marginBottom: scaleSize(12),
     marginTop: 0,
     paddingHorizontal: scaleSize(8),
-  },
-  guidanceSubtitle: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: scaleFont(14),
-    fontFamily: 'Poppins-Regular',
-    textAlign: 'center',
-    lineHeight: scaleSize(20),
   },
   toolsSection: {
     marginTop: scaleSize(8),
@@ -716,12 +711,6 @@ const styles = StyleSheet.create({
   },
   toolGroup: {
     marginBottom: scaleSize(20),
-  },
-  toolGroupTitle: {
-    color: '#fff',
-    fontSize: scaleFont(14),
-    fontFamily: 'Poppins-SemiBold',
-    marginBottom: scaleSize(12),
   },
   toolList: {
     gap: scaleSize(10),

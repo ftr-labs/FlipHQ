@@ -14,16 +14,19 @@ import { Feather } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useFocusEffect } from '@react-navigation/native';
 
-import { GOOGLE_PLACES_API_KEY } from '@env';
-import { 
-  saveSavedSpot, 
-  getSavedSpots, 
-  removeSavedSpot, 
-  saveSearchCache, 
-  getSearchCache 
+import { SUPABASE_FUNCTIONS_URL, APP_SHARED_SECRET } from '@env';
+import {
+  saveSavedSpot,
+  getSavedSpots,
+  removeSavedSpot,
+  saveSearchCache,
+  getSearchCache
 } from '../utils/logManager';
 import { placesRateLimiter } from '../utils/rateLimiter';
+import { getDeviceId } from '../utils/deviceId';
 import { scaleFont, scaleSize } from '../utils/responsive';
+
+const PLACES_API_URL = `${SUPABASE_FUNCTIONS_URL}/places-proxy`;
 
 export default function FindScreen({ navigation }) {
   const [permissionStatus, setPermissionStatus] = useState(null);
@@ -115,19 +118,7 @@ export default function FindScreen({ navigation }) {
       const loc = await Location.getCurrentPositionAsync({});
       const { latitude, longitude } = loc.coords;
 
-      const keywords = 'thrift store|garage sale|flea market|secondhand|pawn shop|antique store|estate sale|consignment|charity shop|goodwill|salvage yard|vintage store|rummage sale|surplus store|liquidation';
-      const url =
-        'https://maps.googleapis.com/maps/api/place/nearbysearch/json' +
-        `?keyword=${encodeURIComponent(keywords)}` +
-        `&location=${latitude},${longitude}` +
-        '&radius=19312' + // 12 miles
-        `&key=${GOOGLE_PLACES_API_KEY}`;
-
-      if (__DEV__) {
-        console.log('Request URL:', url);
-      }
-
-      // Rate limiting: wait if necessary
+      // Rate limiting: soft client-side throttle (the real cap lives server-side)
       if (!placesRateLimiter.canMakeRequest()) {
         const waitTime = placesRateLimiter.getTimeUntilNextRequest();
         if (waitTime > 0) {
@@ -135,8 +126,8 @@ export default function FindScreen({ navigation }) {
         }
       }
 
-      // Record the request
       placesRateLimiter.recordRequest();
+      const deviceId = await getDeviceId();
 
       // Add timeout to prevent hanging requests
       const PLACES_API_TIMEOUT_MS = 30000; // 30 seconds
@@ -146,9 +137,21 @@ export default function FindScreen({ navigation }) {
         }, PLACES_API_TIMEOUT_MS);
       });
 
-      const fetchPromise = fetch(url);
+      const fetchPromise = fetch(PLACES_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-app-secret': APP_SHARED_SECRET,
+        },
+        body: JSON.stringify({ deviceId, latitude, longitude }),
+      });
       const resp = await Promise.race([fetchPromise, timeoutPromise]);
       const data = await resp.json();
+
+      if (data.status === 'OVER_LIMIT') {
+        setMessage(data.message || "You've hit today's scan limit — try again tomorrow.");
+        return;
+      }
 
       if (data.status !== 'OK') {
         if (__DEV__) {

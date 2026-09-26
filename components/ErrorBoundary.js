@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { scaleFont, scaleSize } from '../utils/responsive';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -9,16 +10,13 @@ class ErrorBoundary extends React.Component {
   }
 
   static getDerivedStateFromError(error) {
-    // Update state so the next render will show the fallback UI
     return { hasError: true, error };
   }
 
   componentDidCatch(error, errorInfo) {
-    // Log error to console in dev mode
     if (__DEV__) {
       console.error('ErrorBoundary caught an error:', error, errorInfo);
     }
-    // In production, you might want to log this to an error reporting service
   }
 
   handleReset = () => {
@@ -30,7 +28,7 @@ class ErrorBoundary extends React.Component {
       return (
         <View style={styles.container}>
           <View style={styles.content}>
-            <Feather name="alert-circle" size={48} color="#FF6B6B" />
+            <Feather name="alert-circle" size={scaleSize(48)} color="#FF6B6B" />
             <Text style={styles.title}>Something went wrong</Text>
             <Text style={styles.message}>
               We're sorry, but something unexpected happened. Please try again.
@@ -55,53 +53,52 @@ class ErrorBoundary extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#001a35',
+    backgroundColor: '#001f3f',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: scaleSize(24),
   },
   content: {
     alignItems: 'center',
-    maxWidth: 300,
+    maxWidth: scaleSize(320),
   },
   title: {
     color: '#fff',
-    fontSize: 24,
+    fontSize: scaleFont(24),
     fontFamily: 'Poppins-SemiBold',
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: scaleSize(16),
+    marginBottom: scaleSize(8),
     textAlign: 'center',
   },
   message: {
     color: 'rgba(255,255,255,0.7)',
-    fontSize: 16,
+    fontSize: scaleFont(16),
     fontFamily: 'Poppins-Regular',
     textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 22,
+    marginBottom: scaleSize(24),
+    lineHeight: scaleSize(22),
   },
   errorDetails: {
     color: 'rgba(255,255,255,0.5)',
-    fontSize: 12,
+    fontSize: scaleFont(12),
     fontFamily: 'Poppins-Regular',
     textAlign: 'center',
-    marginBottom: 24,
-    padding: 12,
+    marginBottom: scaleSize(24),
+    padding: scaleSize(12),
     backgroundColor: 'rgba(255,0,0,0.1)',
-    borderRadius: 8,
+    borderRadius: scaleSize(12),
   },
   button: {
     backgroundColor: '#FFD700',
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingHorizontal: scaleSize(32),
+    paddingVertical: scaleSize(14),
+    borderRadius: scaleSize(12),
   },
   buttonText: {
     color: '#001f3f',
-    fontSize: 16,
+    fontSize: scaleFont(16),
     fontFamily: 'Poppins-SemiBold',
   },
 });
 
 export default ErrorBoundary;
-

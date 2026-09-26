@@ -71,6 +71,18 @@ export const basePrices = {
   coin: 15,
   stamp: 10,
   poster: 20,
+  cookware: 35,
+  smallAppliance: 30,
+  dishware: 20,
+  glassware: 15,
+  cutlery: 20,
+  storageContainer: 10,
+  bakeware: 20,
+  mixingBowl: 25,
+  cuttingBoard: 15,
+  thermosCooler: 20,
+  utensilSet: 15,
+  kitchenGadget: 15,
 };
 
 export const averageFixCosts = {
@@ -146,6 +158,18 @@ export const averageFixCosts = {
   coin: 3,
   stamp: 2,
   poster: 5,
+  cookware: 10,
+  smallAppliance: 15,
+  dishware: 5,
+  glassware: 5,
+  cutlery: 5,
+  storageContainer: 3,
+  bakeware: 8,
+  mixingBowl: 5,
+  cuttingBoard: 8,
+  thermosCooler: 8,
+  utensilSet: 5,
+  kitchenGadget: 10,
 };
 
 export const demandScores = {
@@ -221,6 +245,18 @@ export const demandScores = {
   coin: 6,
   stamp: 5,
   poster: 6,
+  cookware: 6,
+  smallAppliance: 5,
+  dishware: 6,
+  glassware: 6,
+  cutlery: 5,
+  storageContainer: 4,
+  bakeware: 5,
+  mixingBowl: 7,
+  cuttingBoard: 5,
+  thermosCooler: 5,
+  utensilSet: 4,
+  kitchenGadget: 5,
 };
 
 export const categoryToolkits = {
@@ -230,6 +266,7 @@ export const categoryToolkits = {
   tools: ['WD-40', 'Steel Wool', 'Degreaser', 'Work Gloves'],
   decor: ['Glass Cleaner', 'Microfiber Cloth', 'Super Glue', 'Paint Brush'],
   collectibles: ['Soft Brush', 'Compressed Air', 'Card Sleeves', 'UV Display Case'],
+  household: ['Dish Soap', 'Baking Soda Paste', 'Microfiber Cloth', 'Magic Eraser'],
 };
 
 export const categoryPlatforms = {
@@ -263,6 +300,11 @@ export const categoryPlatforms = {
     { name: 'StockX', strength: 'Verified Only', fee: '10%', shipping: 'Easy' },
     { name: 'Heritage Auctions', strength: 'High Tier', fee: 'Var', shipping: 'Insured' },
   ],
+  household: [
+    { name: 'eBay', strength: 'Vintage Collectors', fee: '13%', shipping: 'Med' },
+    { name: 'FB Marketplace', strength: 'Local Sets', fee: '0%', shipping: 'None' },
+    { name: 'Etsy', strength: 'Retro/Vintage', fee: '6.5%', shipping: 'Med' },
+  ],
 };
 
 /**
@@ -273,7 +315,7 @@ export const categoryPlatforms = {
  */
 export const getTypeMultiplier = (category, subcategory, type) => {
   // Vintage categories that support vintage premium
-  const vintageCategories = ['furniture', 'clothing', 'decor', 'collectibles'];
+  const vintageCategories = ['furniture', 'clothing', 'decor', 'collectibles', 'household'];
   // Specific vintage electronics that can be truly vintage
   const vintageElectronics = ['camera', 'watch', 'vinylRecord'];
   
@@ -527,5 +569,37 @@ export const conditionMultipliers = {
   'Creamed': 0.4,
   'Creased': 0.5,
   'Tape Marks': 0.5,
+  'None of the above': 1.0,
+  'Power Issues': 0.4,
+  'Power Problems': 0.4,
+  'Rust': 0.5,
+  'Wobbly Legs': 0.5,
+  'Rusty Hardware': 0.6,
+  'Broken Buckle': 0.6,
+  'Loose Handle': 0.6,
+  'Yellowed': 0.6,
+  'Scratched': 0.7,
+  'Faded': 0.7,
+  'Scuffed': 0.7,
+  'Flat Filling': 0.7,
+  'Chipped': 0.7,
+  'Worn': 0.7,
+  'Missing Lid': 0.6,
+  'Warped Bottom': 0.6,
+  'Scratched Nonstick': 0.6,
+  'Loose Handle': 0.6,
+  'Not Turning On': 0.4,
+  'Frayed Cord': 0.5,
+  'Loud Noise': 0.7,
+  'Faded Pattern': 0.7,
+  'Missing Pieces': 0.5,
+  'Cloudy/Hazy': 0.6,
+  'Scratched Coating': 0.6,
+  'Dented': 0.6,
+  'Missing Piece': 0.6,
+  'Deep Cuts/Grooves': 0.5,
+  'Broken Seal': 0.5,
+  'Melted Tip': 0.5,
+  'Broken Handle': 0.5,
   default: 0.7,
 };
