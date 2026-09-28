@@ -267,6 +267,7 @@ export const categoryToolkits = {
   decor: ['Glass Cleaner', 'Microfiber Cloth', 'Super Glue', 'Paint Brush'],
   collectibles: ['Soft Brush', 'Compressed Air', 'Card Sleeves', 'UV Display Case'],
   household: ['Dish Soap', 'Baking Soda Paste', 'Microfiber Cloth', 'Magic Eraser'],
+  general: ['Microfiber Cloth', 'Mild Soap & Water', 'Magic Eraser', 'Good Lighting for Photos'],
 };
 
 export const categoryPlatforms = {
@@ -304,6 +305,10 @@ export const categoryPlatforms = {
     { name: 'eBay', strength: 'Vintage Collectors', fee: '13%', shipping: 'Med' },
     { name: 'FB Marketplace', strength: 'Local Sets', fee: '0%', shipping: 'None' },
     { name: 'Etsy', strength: 'Retro/Vintage', fee: '6.5%', shipping: 'Med' },
+  ],
+  general: [
+    { name: 'eBay', strength: 'Biggest Reach', fee: '13%', shipping: 'Varies' },
+    { name: 'FB Marketplace', strength: 'Quick Local Cash', fee: '0%', shipping: 'None' },
   ],
 };
 

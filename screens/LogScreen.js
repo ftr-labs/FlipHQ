@@ -92,9 +92,7 @@ export default function LogScreen({ navigation, route }) {
       }
 
       navigation.navigate('Estimate', {
-        category: result.category,
-        subcategory: result.subcategory,
-        type: result.type,
+        isGeneric: true,
         condition: result.condition,
         itemName: result.itemName,
         acquisitionCost: Number(acquisitionCost) || 0,

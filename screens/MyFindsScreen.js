@@ -148,7 +148,7 @@ export default function MyFindsScreen({ navigation }) {
         <View style={styles.cardHeader}>
           <View style={styles.cardTitleContainer}>
             <Text style={styles.itemName} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
-            <Text style={styles.itemCategory}>{item.category} • {item.subcategory}</Text>
+            <Text style={styles.itemCategory}>{item.isGeneric ? item.condition : `${item.category} • ${item.subcategory}`}</Text>
           </View>
           <Pressable 
             onPress={() => handleToggleStatus(item)}

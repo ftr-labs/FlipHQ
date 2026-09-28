@@ -113,9 +113,101 @@ export const calculateValuation = ({
   };
 };
 
+// Universal condition scale for items outside the curated category tables — applies to anything.
+export const GENERIC_CONDITIONS = ['Excellent', 'Good', 'Fair', 'Poor'];
+const GENERIC_CONDITION_MULTIPLIERS = {
+  Excellent: 1.0,
+  Good: 0.85,
+  Fair: 0.55,
+  Poor: 0.25,
+};
+
+/**
+ * Prices an item with no category/subcategory match, using only a live eBay market
+ * signal and a universal condition tier. There's no repair-cost model here — for an
+ * arbitrary item we have no real data on what fixing it costs, so this gives one
+ * honest number (expected value as-is) rather than a fabricated fix-cost breakdown.
+ *
+ * @param {Object} params
+ * @param {string} params.condition - One of GENERIC_CONDITIONS
+ * @param {number} params.acquisitionCost - What the user paid for it
+ * @param {number} [params.marketPrice] - Median asking price of comparable used eBay listings
+ * @param {number} [params.marketSampleSize] - Number of listings behind marketPrice
+ */
+export const calculateGenericValuation = ({
+  condition,
+  acquisitionCost = 0,
+  marketPrice = null,
+  marketSampleSize = 0,
+}) => {
+  const cost = Number(acquisitionCost) || 0;
+
+  if (!marketPrice || marketSampleSize < MIN_MARKET_SAMPLES) {
+    return {
+      estimatedValue: 0,
+      fixCost: 0,
+      postFixValue: 0,
+      profit: -cost,
+      lowProfit: -cost,
+      highProfit: -cost,
+      lowValue: 0,
+      highValue: 0,
+      demandScore: 0,
+      fixabilityScore: null,
+      rating: 0,
+      usedMarketData: false,
+      marketSampleSize: 0,
+      insufficientData: true,
+    };
+  }
+
+  const conditionMultiplier = GENERIC_CONDITION_MULTIPLIERS[condition] ?? GENERIC_CONDITION_MULTIPLIERS.Fair;
+  const marketSignal = marketPrice * MARKET_ASKING_TO_SOLD_FACTOR;
+  const estimatedValue = Math.round(marketSignal * conditionMultiplier);
+  const postFixValue = estimatedValue;
+  const profit = postFixValue - cost;
+
+  // More comps behind the number = tighter confidence band.
+  const variance = Math.max(0.12, Math.min(0.28, 0.30 - marketSampleSize * 0.01));
+  const lowValue = Math.round(postFixValue * (1 - variance));
+  const highValue = Math.round(postFixValue * (1 + variance));
+  const lowProfit = lowValue - cost;
+  const highProfit = highValue - cost;
+
+  // No demand table exists for an arbitrary item — the number of live comparable
+  // listings is used as a rough stand-in (more listings roughly tracks a bigger market).
+  const demandScore = Math.max(1, Math.min(10, Math.round(marketSampleSize / 2)));
+
+  return {
+    estimatedValue,
+    fixCost: 0,
+    postFixValue,
+    profit,
+    lowProfit,
+    highProfit,
+    lowValue,
+    highValue,
+    demandScore,
+    fixabilityScore: null,
+    rating: getStarRating(profit, conditionMultiplier, demandScore),
+    usedMarketData: true,
+    marketSampleSize,
+    insufficientData: false,
+  };
+};
+
 // Recomputes a valuation from a saved inventory item, reusing the market data captured when it was logged.
-export const valuationForItem = (item) =>
-  calculateValuation({
+export const valuationForItem = (item) => {
+  if (item.isGeneric) {
+    return calculateGenericValuation({
+      condition: item.condition,
+      acquisitionCost: item.acquisitionCost || 0,
+      marketPrice: item.marketPrice,
+      marketSampleSize: item.marketSampleSize,
+    });
+  }
+
+  return calculateValuation({
     category: item.category,
     subcategory: item.subcategory,
     type: item.type,
@@ -124,6 +216,7 @@ export const valuationForItem = (item) =>
     marketPrice: item.marketPrice,
     marketSampleSize: item.marketSampleSize,
   });
+};
 
 /**
  * Determines flip worthiness (0-5 stars) - MUCH STRICTER

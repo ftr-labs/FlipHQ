@@ -81,7 +81,7 @@ export default function FlipScreen({ navigation }) {
 
     const valuation = valuationForItem(selectedItem);
 
-    const platforms = categoryPlatforms[selectedItem.category] || [];
+    const platforms = categoryPlatforms[selectedItem.category] || categoryPlatforms.general;
 
     return (
       <View style={styles.detailsBox}>

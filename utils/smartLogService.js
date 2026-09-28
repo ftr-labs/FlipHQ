@@ -6,9 +6,11 @@ const API_URL = `${SUPABASE_FUNCTIONS_URL}/smart-log-proxy`;
 const API_TIMEOUT_MS = 20000;
 
 /**
- * Turns free text into a classified item plus a live eBay market signal, in one round trip.
+ * Turns free text into an item name, a universal condition tier, and a live eBay
+ * market signal, in one round trip. No category taxonomy involved — this works for
+ * anything, not just the curated categories the manual picker knows about.
  * @param {string} text - What the user typed about the item they found
- * @returns {Promise<{capped: true} | {itemName, category, subcategory, type, condition, marketPrice, marketSampleSize} | null>}
+ * @returns {Promise<{capped: true} | {itemName, condition, marketPrice, marketSampleSize} | null>}
  *   null means the text couldn't be classified; throws on network/timeout errors.
  */
 export const smartLog = async (text) => {
@@ -35,9 +37,6 @@ export const smartLog = async (text) => {
 
   return {
     itemName: data.itemName,
-    category: data.category,
-    subcategory: data.subcategory,
-    type: data.type,
     condition: data.condition,
     marketPrice: data.marketPrice,
     marketSampleSize: data.marketSampleSize,

@@ -14,17 +14,18 @@ import {
 import { useRoute, useNavigation, CommonActions } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { saveLoggedItem } from '../utils/logManager';
-import { calculateValuation, formatMoney } from '../utils/valuation';
+import { calculateValuation, calculateGenericValuation, formatMoney } from '../utils/valuation';
 import { scaleFont, scaleSize, getResponsiveValue } from '../utils/responsive';
 
 export default function EstimateScreen() {
   const route = useRoute();
   const navigation = useNavigation();
-  const { 
-    category, 
-    subcategory, 
-    condition, 
-    type, 
+  const {
+    isGeneric = false,
+    category,
+    subcategory,
+    condition,
+    type,
     source,
     itemName: initialItemName,
     acquisitionCost = 0,
@@ -37,9 +38,11 @@ export default function EstimateScreen() {
   const [errorMessage, setErrorMessage] = useState('');
   const [itemName, setItemName] = useState(initialItemName || '');
 
+  const hasValidParams = isGeneric ? !!condition : !!(subcategory && type);
+
   // Route params validation guard
   useEffect(() => {
-    if (!subcategory || !type) {
+    if (!hasValidParams) {
       setErrorMessage('Missing required information. Returning to home.');
       setShowErrorModal(true);
       setTimeout(() => {
@@ -51,18 +54,10 @@ export default function EstimateScreen() {
         );
       }, 2000);
     }
-  }, [subcategory, type, navigation]);
+  }, [hasValidParams, navigation]);
 
   // Use shared valuation logic (only if params are valid)
-  const valuation = (subcategory && type && category) ? calculateValuation({
-    category,
-    subcategory,
-    type,
-    condition,
-    acquisitionCost,
-    marketPrice,
-    marketSampleSize,
-  }) : {
+  const valuation = !hasValidParams ? {
     estimatedValue: 0,
     fixCost: 0,
     postFixValue: 0,
@@ -74,7 +69,21 @@ export default function EstimateScreen() {
     rating: 0,
     usedMarketData: false,
     marketSampleSize: 0,
-  };
+    insufficientData: false,
+  } : isGeneric ? calculateGenericValuation({
+    condition,
+    acquisitionCost,
+    marketPrice,
+    marketSampleSize,
+  }) : calculateValuation({
+    category,
+    subcategory,
+    type,
+    condition,
+    acquisitionCost,
+    marketPrice,
+    marketSampleSize,
+  });
 
   const {
     estimatedValue,
@@ -88,6 +97,7 @@ export default function EstimateScreen() {
     rating,
     usedMarketData,
     marketSampleSize: usedSampleSize,
+    insufficientData,
   } = valuation;
 
   const flipWorthiness = '⭐'.repeat(rating).padEnd(5, '☆');
@@ -158,7 +168,20 @@ export default function EstimateScreen() {
       return;
     }
 
-    const itemToLog = {
+    const itemToLog = isGeneric ? {
+      name: finalName,
+      isGeneric: true,
+      condition,
+      estimatedValue,
+      fixCost,
+      postFixValue,
+      acquisitionCost,
+      profit,
+      marketPrice,
+      marketSampleSize,
+      source: source || 'Custom Entry',
+      loggedAt: new Date().toISOString(),
+    } : {
       name: finalName,
       category,
       subcategory,
@@ -191,7 +214,18 @@ export default function EstimateScreen() {
       </View>
 
       <View style={styles.content}>
-        {category === 'collectibles' ? (
+        {isGeneric && insufficientData ? (
+          <View style={styles.card}>
+            <View style={styles.guidanceHeader}>
+              <Text style={styles.guidanceTitle}>Not Enough Market Data</Text>
+            </View>
+            <View style={styles.divider} />
+            <Text style={[styles.infoText, { textAlign: 'center', lineHeight: scaleSize(20) }]}>
+              We couldn't find enough current eBay listings for "{initialItemName}" to price it with any confidence.
+              Try describing it more specifically (brand, model), or log it manually if it fits one of our categories.
+            </Text>
+          </View>
+        ) : category === 'collectibles' ? (
           <View style={styles.card}>
             <View style={styles.guidanceHeader}>
               <Text style={styles.guidanceTitle}>Collectibles Require Specialized Valuation</Text>
@@ -366,25 +400,46 @@ export default function EstimateScreen() {
                     {formatMoney(lowProfit)} – {formatMoney(highProfit)}
                   </Text>
                 </View>
-                <View style={styles.detailItem}>
-                  <Text style={styles.detailLabel}>Market Demand</Text>
-                  <Text style={styles.detailValue}>{demandScore}/10</Text>
-                </View>
-                <View style={styles.detailItem}>
-                  <Text style={styles.detailLabel}>Fixability</Text>
-                  <Text style={styles.detailValue}>{fixabilityScore}/10</Text>
-                </View>
-                <View style={styles.detailItem}>
-                  <Text style={styles.detailLabel}>Post-Fix Value</Text>
-                  <Text style={styles.detailValue}>${postFixValue}</Text>
-                </View>
+                {isGeneric ? (
+                  <>
+                    <View style={styles.detailItem}>
+                      <Text style={styles.detailLabel}>Comps Found</Text>
+                      <Text style={styles.detailValue}>{usedSampleSize} listings</Text>
+                    </View>
+                    <View style={styles.detailItem}>
+                      <Text style={styles.detailLabel}>Condition</Text>
+                      <Text style={styles.detailValue}>{condition}</Text>
+                    </View>
+                    <View style={styles.detailItem}>
+                      <Text style={styles.detailLabel}>Est. Value</Text>
+                      <Text style={styles.detailValue}>${postFixValue}</Text>
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    <View style={styles.detailItem}>
+                      <Text style={styles.detailLabel}>Market Demand</Text>
+                      <Text style={styles.detailValue}>{demandScore}/10</Text>
+                    </View>
+                    <View style={styles.detailItem}>
+                      <Text style={styles.detailLabel}>Fixability</Text>
+                      <Text style={styles.detailValue}>{fixabilityScore}/10</Text>
+                    </View>
+                    <View style={styles.detailItem}>
+                      <Text style={styles.detailLabel}>Post-Fix Value</Text>
+                      <Text style={styles.detailValue}>${postFixValue}</Text>
+                    </View>
+                  </>
+                )}
               </View>
 
               <View style={styles.divider} />
 
               <View style={styles.infoRow}>
                 <Feather name="tag" size={scaleSize(14)} color="rgba(255,255,255,0.4)" />
-                <Text style={styles.infoText}>{category} • {subcategory} • {type}</Text>
+                <Text style={styles.infoText}>
+                  {isGeneric ? `AI Classified • ${condition}` : `${category} • ${subcategory} • ${type}`}
+                </Text>
               </View>
               {acquisitionCost > 0 && (
                 <View style={[styles.infoRow, { marginTop: scaleSize(8) }]}>
@@ -403,20 +458,27 @@ export default function EstimateScreen() {
         )}
 
         <View style={styles.buttonContainer}>
-          <Pressable 
-            style={styles.logBtn} 
-            onPress={() => {
-              if (initialItemName) {
-                handleLog(); // Directly log if name was already provided
-              } else {
-                setShowNameModal(true);
-              }
-            }}
+          {!(isGeneric && insufficientData) && (
+            <Pressable
+              style={styles.logBtn}
+              onPress={() => {
+                // Manual mode: the user already typed this name themselves, no need to re-confirm.
+                // Smart mode: the name is an AI guess, so give them a chance to check/edit it first.
+                if (initialItemName && !isGeneric) {
+                  handleLog();
+                } else {
+                  setShowNameModal(true);
+                }
+              }}
+            >
+              <Text style={styles.logBtnText}>Save to Inventory</Text>
+            </Pressable>
+          )}
+          <Pressable
+            style={styles.ditchBtn}
+            onPress={isGeneric && insufficientData ? () => navigation.goBack() : resetToHome}
           >
-            <Text style={styles.logBtnText}>Save to Inventory</Text>
-          </Pressable>
-          <Pressable style={styles.ditchBtn} onPress={resetToHome}>
-            <Text style={styles.ditchBtnText}>Ditch It</Text>
+            <Text style={styles.ditchBtnText}>{isGeneric && insufficientData ? 'Go Back & Retry' : 'Ditch It'}</Text>
           </Pressable>
         </View>
       </View>

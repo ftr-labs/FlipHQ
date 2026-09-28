@@ -51,7 +51,12 @@ export default function FixScreen({ navigation }) {
 
   const buildYouTubeQuery = (item) => {
     if (!item) return '';
-    
+
+    if (item.isGeneric) {
+      const condition = item.condition && item.condition !== 'Excellent' ? item.condition.toLowerCase() : '';
+      return `how to fix ${condition ? condition + ' ' : ''}${item.name}`.trim();
+    }
+
     const categoryContext = {
       furniture: 'wooden',
       clothing: 'leather',
@@ -111,7 +116,7 @@ export default function FixScreen({ navigation }) {
 
     const valuation = valuationForItem(selectedItem);
 
-    const toolkit = categoryToolkits[selectedItem.category] || [];
+    const toolkit = categoryToolkits[selectedItem.category] || categoryToolkits.general;
 
     return (
       <View style={styles.detailsBox}>
@@ -126,23 +131,32 @@ export default function FixScreen({ navigation }) {
         </View>
 
         {/* Fixability Score */}
-        <View style={styles.scoreCard}>
-          <View style={styles.scoreInfo}>
-            <Text style={styles.scoreLabel}>Fixability Score</Text>
-            <Text style={styles.scoreValue}>{valuation.fixabilityScore}/10</Text>
+        {selectedItem.isGeneric ? (
+          <View style={styles.scoreCard}>
+            <Text style={styles.scoreLabel}>No Repair Data Available</Text>
+            <Text style={[styles.scoreHint, { marginTop: scaleSize(8) }]}>
+              We don't have detailed repair estimates for this kind of item. Give it a clean, take good photos, and move on to Flip when it's ready.
+            </Text>
           </View>
-          <View style={styles.progressBarBg}>
-            <View 
-              style={[
-                styles.progressBarFill, 
-                { width: `${valuation.fixabilityScore * 10}%`, backgroundColor: valuation.fixabilityScore > 7 ? '#32CD32' : valuation.fixabilityScore > 4 ? '#FFD700' : '#ff4444' }
-              ]} 
-            />
+        ) : (
+          <View style={styles.scoreCard}>
+            <View style={styles.scoreInfo}>
+              <Text style={styles.scoreLabel}>Fixability Score</Text>
+              <Text style={styles.scoreValue}>{valuation.fixabilityScore}/10</Text>
+            </View>
+            <View style={styles.progressBarBg}>
+              <View
+                style={[
+                  styles.progressBarFill,
+                  { width: `${valuation.fixabilityScore * 10}%`, backgroundColor: valuation.fixabilityScore > 7 ? '#32CD32' : valuation.fixabilityScore > 4 ? '#FFD700' : '#ff4444' }
+                ]}
+              />
+            </View>
+            <Text style={styles.scoreHint}>
+              {valuation.fixabilityScore > 7 ? 'High chance of easy repair.' : valuation.fixabilityScore > 4 ? 'Moderate effort required.' : 'Careful: This might be a tough one.'}
+            </Text>
           </View>
-          <Text style={styles.scoreHint}>
-            {valuation.fixabilityScore > 7 ? 'High chance of easy repair.' : valuation.fixabilityScore > 4 ? 'Moderate effort required.' : 'Careful: This might be a tough one.'}
-          </Text>
-        </View>
+        )}
 
         {/* YouTube Action */}
         <Pressable style={styles.youtubeBtn} onPress={openYouTube}>
@@ -167,16 +181,18 @@ export default function FixScreen({ navigation }) {
         </View>
 
         {/* Financial Context */}
-        <View style={styles.financialRow}>
-          <View style={styles.financialBox}>
-            <Text style={styles.finLabel}>Est. Fix Cost</Text>
-            <Text style={styles.finValue}>${valuation.fixCost}</Text>
+        {!selectedItem.isGeneric && (
+          <View style={styles.financialRow}>
+            <View style={styles.financialBox}>
+              <Text style={styles.finLabel}>Est. Fix Cost</Text>
+              <Text style={styles.finValue}>${valuation.fixCost}</Text>
+            </View>
+            <View style={styles.financialBox}>
+              <Text style={styles.finLabel}>Added Value</Text>
+              <Text style={[styles.finValue, { color: '#32CD32' }]}>+${valuation.postFixValue - valuation.estimatedValue}</Text>
+            </View>
           </View>
-          <View style={styles.financialBox}>
-            <Text style={styles.finLabel}>Added Value</Text>
-            <Text style={[styles.finValue, { color: '#32CD32' }]}>+${valuation.postFixValue - valuation.estimatedValue}</Text>
-          </View>
-        </View>
+        )}
 
         {/* Status Update Buttons */}
         <View style={styles.actionButtons}>
@@ -265,7 +281,7 @@ export default function FixScreen({ navigation }) {
                 >
                   <View>
                     <Text style={styles.optionName} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
-                    <Text style={styles.optionSub}>{item.category} • {item.condition}</Text>
+                    <Text style={styles.optionSub}>{item.isGeneric ? item.condition : `${item.category} • ${item.condition}`}</Text>
                   </View>
                   {selectedItem?.id === item.id && (
                     <Feather name="check" size={scaleSize(20)} color="#FFD700" />
